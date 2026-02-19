@@ -1,0 +1,86 @@
+const mysql = require('mysql2/promise');
+const sequelize = require('../config/database');
+const fs = require('fs');
+const path = require('path');
+
+// Helper to clean up excessive indexes causing "Too many keys specified"
+const cleanupExcessiveIndexes = async () => {
+    try {
+        const queryInterface = sequelize.getQueryInterface();
+        const tables = await queryInterface.showAllTables();
+        
+        for (const table of tables) {
+            // Get all indexes for the table
+            const [indexes] = await sequelize.query(`SHOW INDEX FROM \`${table}\``);
+            
+            // Group by column name to find duplicates
+            const indexGroups = {};
+            indexes.forEach(idx => {
+                const key = idx.Column_name;
+                if (!indexGroups[key]) indexGroups[key] = [];
+                indexGroups[key].push(idx.Key_name);
+            });
+
+            // Drop duplicate indexes (keep the first one, drop others)
+            for (const column in indexGroups) {
+                const keyNames = indexGroups[column];
+                if (keyNames.length > 1) {
+                    console.log(`Cleaning up duplicate indexes on ${table}.${column}: ${keyNames.join(', ')}`);
+                    // Keep the first one (usually the oldest or simplest name), drop the rest
+                    // Skip 'PRIMARY'
+                    for (let i = 1; i < keyNames.length; i++) {
+                        const keyName = keyNames[i];
+                        if (keyName === 'PRIMARY') continue;
+                        try {
+                            await sequelize.query(`DROP INDEX \`${keyName}\` ON \`${table}\``);
+                            console.log(`Dropped index: ${keyName}`);
+                        } catch (err) {
+                            console.error(`Failed to drop index ${keyName}:`, err.message);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.warn('Index cleanup failed (non-fatal):', error.message);
+    }
+};
+
+const initializeDb = async () => {
+    try {
+        // Ensure MySQL Database exists
+        if (sequelize.getDialect() === 'mysql') {
+            const connection = await mysql.createConnection({
+                host: process.env.DB_HOST,
+                user: process.env.DB_USER,
+                password: process.env.DB_PASSWORD,
+            });
+            await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\`;`);
+            await connection.end();
+        }
+
+        await sequelize.authenticate();
+        console.log(`Database connected successfully (${sequelize.getDialect()})`);
+        
+        // Create uploads directory if not exists
+        const uploadDir = path.join(__dirname, '../uploads');
+        if (!fs.existsSync(uploadDir)){
+            fs.mkdirSync(uploadDir);
+        }
+        
+        // PRE-FIX: Clean up indexes before syncing to prevent "Too many keys" error
+        await cleanupExcessiveIndexes();
+
+        // Sync models
+        await sequelize.sync({ alter: true }); 
+        console.log('Models synchronized');
+        
+    } catch (error) {
+        console.error('Database connection/sync failed:', error.message);
+        console.error('CRITICAL: MySQL connection failed. Please check your .env configuration.');
+        // Do NOT fallback to SQLite. Fail hard to ensure MySQL is used.
+        process.exit(1);
+    }
+};
+
+module.exports = initializeDb;

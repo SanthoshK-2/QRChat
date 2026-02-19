@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR Chat</title>
+    <script>
+      // Robust global polyfills for simple-peer and other Node.js libraries
+      if (typeof global === 'undefined') {
+        window.global = window;
+      }
+      if (typeof process === 'undefined') {
+        window.process = { 
+          env: { DEBUG: undefined }, 
+          version: '', 
+          nextTick: function(cb) { setTimeout(cb, 0); },
+          browser: true 
+        };
+      }
+      if (typeof Buffer === 'undefined') {
+         // Buffer will be injected by the bundler via 'buffer' package, 
+         // but setting a placeholder can prevent early crashes.
+         // Actual Buffer is handled in main.jsx or vite config.
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            }, (err) => {
+              console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>

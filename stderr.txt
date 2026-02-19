@@ -1,0 +1,37 @@
+2026-02-09T14:01:06Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+2026-02-09T14:01:07Z INF Requesting new quick Tunnel on trycloudflare.com...
+2026-02-09T14:01:15Z INF +--------------------------------------------------------------------------------------------+
+2026-02-09T14:01:15Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+2026-02-09T14:01:15Z INF |  https://accommodate-exceptional-likely-eddie.trycloudflare.com                            |
+2026-02-09T14:01:15Z INF +--------------------------------------------------------------------------------------------+
+2026-02-09T14:01:15Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp]
+2026-02-09T14:01:15Z INF Version 2026.2.0 (Checksum b3279f2186a1c3c438ad5865e802bbbec26090c5d3fdb4ac1113f1143a94837a)
+2026-02-09T14:01:16Z INF GOOS: windows, GOVersion: go1.24.13, GoArch: amd64
+2026-02-09T14:01:16Z INF Settings: map[ha-connections:1 protocol:quic url:http://localhost:5001]
+2026-02-09T14:01:16Z INF cloudflared will not automatically update on Windows systems.
+2026-02-09T14:01:16Z INF Generated Connector ID: 19c3fb94-8bbd-4053-b2d4-dd73eeec5a7c
+2026-02-09T14:01:17Z INF Initial protocol quic
+2026-02-09T14:01:17Z INF ICMP proxy will use 192.168.42.89 as source for IPv4
+2026-02-09T14:01:20Z INF ICMP proxy will use 2409:4072:8d9a:d96d:f8c:4b70:132e:a6db in zone Ethernet 3 as source for IPv6
+2026-02-09T14:01:22Z INF cloudflared does not support loading the system root certificate pool on Windows. Please use --origin-ca-pool <PATH> to specify the path to the certificate pool
+2026-02-09T14:01:22Z INF ICMP proxy will use 192.168.42.89 as source for IPv4
+2026-02-09T14:01:22Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveP256] connIndex=0 event=0 ip=198.41.192.7
+2026-02-09T14:01:24Z INF Registered tunnel connection connIndex=0 connection=8d91efb8-9c58-4158-8e87-7762934781c4 event=0 ip=198.41.192.7 location=maa03 protocol=quic
+2026-02-09T14:01:25Z INF ICMP proxy will use 2409:4072:8d9a:d96d:f8c:4b70:132e:a6db in zone Ethernet 3 as source for IPv6
+2026-02-09T14:01:25Z INF Starting metrics server on 127.0.0.1:20242/metrics
+2026-02-09T14:56:10Z ERR failed to accept incoming stream requests error="failed to accept QUIC stream: timeout: no recent network activity" connIndex=0 event=0 ip=198.41.192.7
+2026-02-09T14:56:10Z ERR failed to run the datagram handler error="timeout: no recent network activity" connIndex=0 event=0 ip=198.41.192.7
+2026-02-09T14:56:10Z ERR failed to serve tunnel connection error="accept stream listener encountered a failure while serving" connIndex=0 event=0 ip=198.41.192.7
+2026-02-09T14:56:10Z ERR Serve tunnel error error="accept stream listener encountered a failure while serving" connIndex=0 event=0 ip=198.41.192.7
+2026-02-09T14:56:10Z INF Retrying connection in up to 1s connIndex=0 event=0 ip=198.41.192.7
+2026-02-09T14:56:12Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveP256] connIndex=0 event=0 ip=198.41.192.7
+2026-02-09T14:56:13Z INF Registered tunnel connection connIndex=0 connection=4dcf865f-3e05-4ae0-a1f3-152e8a0924e2 event=0 ip=198.41.192.7 location=maa03 protocol=quic
+2026-02-09T14:57:06Z INF Initiating graceful shutdown due to signal terminated ...
+2026-02-09T14:57:06Z ERR failed to run the datagram handler error="context canceled" connIndex=0 event=0 ip=198.41.192.7
+2026-02-09T14:57:06Z ERR failed to serve tunnel connection error="accept stream listener encountered a failure while serving" connIndex=0 event=0 ip=198.41.192.7
+2026-02-09T14:57:06Z ERR Serve tunnel error error="accept stream listener encountered a failure while serving" connIndex=0 event=0 ip=198.41.192.7
+2026-02-09T14:57:06Z INF Retrying connection in up to 1s connIndex=0 event=0 ip=198.41.192.7
+2026-02-09T14:57:06Z ERR Connection terminated connIndex=0
+2026-02-09T14:57:06Z ERR no more connections active and exiting
+2026-02-09T14:57:06Z INF Tunnel server stopped
+2026-02-09T14:57:06Z INF Metrics server stopped
