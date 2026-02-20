@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: qrchat-backend
+    env: node
+    plan: free
+    rootDir: .
+    buildCommand: cd server && npm install && cd ../client && npm install && npm run build
+    startCommand: cd server && npm start
+    envVars:
+      - key: PORT
+        value: 5001
+      - key: NODE_VERSION
+        value: 20.11.0
