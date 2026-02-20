@@ -1,6 +1,6 @@
+cloudflared.exe
+*.sqlite
 node_modules/
 stderr
 stdout
 tunnel_output
-chat_db.sqlite
-cloudflared
