@@ -48,8 +48,11 @@ const cleanupExcessiveIndexes = async () => {
 
 const initializeDb = async () => {
     try {
-        // Ensure MySQL Database exists
-        if (sequelize.getDialect() === 'mysql') {
+        // If DATABASE_URL is provided, skip manual database creation and rely on the connection string
+        if (process.env.DATABASE_URL) {
+            console.log('Using DATABASE_URL environment variable. Skipping manual database creation check.');
+        } else if (sequelize.getDialect() === 'mysql') {
+            // Ensure MySQL Database exists (Local/Manual config)
             const connection = await mysql.createConnection({
                 host: process.env.DB_HOST,
                 user: process.env.DB_USER,
