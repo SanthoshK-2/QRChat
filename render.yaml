@@ -4,8 +4,8 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: npm run build
-    startCommand: npm start
+    buildCommand: npm install && npm install --prefix client && npm install --prefix server && npm run build --prefix client
+    startCommand: cd server && node index.js
     envVars:
       - key: PORT
         value: 5001

@@ -38,16 +38,31 @@ app.use('/api/calls', callRoutes);
 const fs = require('fs');
 
 // Robust path resolution for client build
-const clientBuildPath = path.join(__dirname, '../client/dist');
-const clientBuildPathAlt = path.join(process.cwd(), 'client/dist');
+// Try multiple possible locations
+const possiblePaths = [
+    path.join(__dirname, '../client/dist'),
+    path.join(process.cwd(), 'client/dist'),
+    path.join(__dirname, 'client/dist'), // If built into server
+    path.join(process.cwd(), 'dist'), // If root is dist
+    path.join(__dirname, 'public') // Fallback
+];
 
-// Check if build exists
-let finalBuildPath = clientBuildPath;
-if (!fs.existsSync(clientBuildPath) && fs.existsSync(clientBuildPathAlt)) {
-    finalBuildPath = clientBuildPathAlt;
+let finalBuildPath = null;
+
+for (const p of possiblePaths) {
+    if (fs.existsSync(path.join(p, 'index.html'))) {
+        finalBuildPath = p;
+        break;
+    }
 }
 
-console.log('Serving static files from:', finalBuildPath);
+if (!finalBuildPath) {
+    console.warn('WARNING: Could not find index.html in any expected location:', possiblePaths);
+    // Default to the first one just to have a path, but it will fail
+    finalBuildPath = possiblePaths[0];
+} else {
+    console.log('Serving static files from:', finalBuildPath);
+}
 
 app.use(express.static(finalBuildPath, {
     setHeaders: (res, path) => {
@@ -60,19 +75,30 @@ app.use(express.static(finalBuildPath, {
 }));
 
 app.use((req, res) => {
-    const indexFile = path.join(finalBuildPath, 'index.html');
-    if (fs.existsSync(indexFile)) {
-        res.sendFile(indexFile);
+    // Only handle GET requests for HTML/SPA
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+        const indexFile = path.join(finalBuildPath, 'index.html');
+        if (fs.existsSync(indexFile)) {
+            res.sendFile(indexFile);
+        } else {
+            console.error('Frontend build not found at:', finalBuildPath);
+            res.status(404).send(`
+                <div style="font-family: sans-serif; padding: 20px;">
+                    <h1>404 - Frontend Not Found</h1>
+                    <p>The server is running, but the React frontend build is missing.</p>
+                    <p><strong>Debug Info:</strong></p>
+                    <ul>
+                        <li>Checked Path: ${finalBuildPath}</li>
+                        <li>Current Directory (__dirname): ${__dirname}</li>
+                        <li>Process CWD: ${process.cwd()}</li>
+                    </ul>
+                    <p><em>Please check the build logs on Render.</em></p>
+                </div>
+            `);
+        }
     } else {
-        console.error('Frontend build not found at:', finalBuildPath);
-        // Fallback for debugging on Render
-        res.status(404).send(`
-            <h1>404 - Frontend Not Found</h1>
-            <p>The server is running, but the React frontend build is missing.</p>
-            <p>Checked path: ${finalBuildPath}</p>
-            <p>Current directory: ${__dirname}</p>
-            <p>Process CWD: ${process.cwd()}</p>
-        `);
+        // API 404
+        res.status(404).json({ message: 'API Route not found' });
     }
 });
 
