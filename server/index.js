@@ -35,8 +35,21 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/recovery', recoveryRoutes);
 app.use('/api/calls', callRoutes);
 
+const fs = require('fs');
+
+// Robust path resolution for client build
 const clientBuildPath = path.join(__dirname, '../client/dist');
-app.use(express.static(clientBuildPath, {
+const clientBuildPathAlt = path.join(process.cwd(), 'client/dist');
+
+// Check if build exists
+let finalBuildPath = clientBuildPath;
+if (!fs.existsSync(clientBuildPath) && fs.existsSync(clientBuildPathAlt)) {
+    finalBuildPath = clientBuildPathAlt;
+}
+
+console.log('Serving static files from:', finalBuildPath);
+
+app.use(express.static(finalBuildPath, {
     setHeaders: (res, path) => {
         if (path.endsWith('index.html')) {
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -47,13 +60,20 @@ app.use(express.static(clientBuildPath, {
 }));
 
 app.use((req, res) => {
-    const indexFile = path.join(clientBuildPath, 'index.html');
-    res.sendFile(indexFile, (err) => {
-        if (err) {
-            console.error('Error sending index.html:', err);
-            res.status(500).send('Error loading frontend. Build might be missing.');
-        }
-    });
+    const indexFile = path.join(finalBuildPath, 'index.html');
+    if (fs.existsSync(indexFile)) {
+        res.sendFile(indexFile);
+    } else {
+        console.error('Frontend build not found at:', finalBuildPath);
+        // Fallback for debugging on Render
+        res.status(404).send(`
+            <h1>404 - Frontend Not Found</h1>
+            <p>The server is running, but the React frontend build is missing.</p>
+            <p>Checked path: ${finalBuildPath}</p>
+            <p>Current directory: ${__dirname}</p>
+            <p>Process CWD: ${process.cwd()}</p>
+        `);
+    }
 });
 
 const io = new Server(server, {

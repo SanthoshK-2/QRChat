@@ -19,6 +19,10 @@ export default defineConfig({
     // Define global for libraries that expect it
     global: 'globalThis',
   },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
