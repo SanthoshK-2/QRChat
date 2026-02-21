@@ -35,7 +35,8 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/recovery', recoveryRoutes);
 app.use('/api/calls', callRoutes);
 
-app.use(express.static(path.join(__dirname, '../client/dist'), {
+const clientBuildPath = path.join(__dirname, '../client/dist');
+app.use(express.static(clientBuildPath, {
     setHeaders: (res, path) => {
         if (path.endsWith('index.html')) {
             res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -46,7 +47,13 @@ app.use(express.static(path.join(__dirname, '../client/dist'), {
 }));
 
 app.use((req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+    const indexFile = path.join(clientBuildPath, 'index.html');
+    res.sendFile(indexFile, (err) => {
+        if (err) {
+            console.error('Error sending index.html:', err);
+            res.status(500).send('Error loading frontend. Build might be missing.');
+        }
+    });
 });
 
 const io = new Server(server, {
