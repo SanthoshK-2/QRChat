@@ -40,11 +40,10 @@ const fs = require('fs');
 // Robust path resolution for client build
 // Try multiple possible locations
 const possiblePaths = [
+    path.join(__dirname, 'public'), // Priority: Moved artifacts
     path.join(__dirname, '../client/dist'),
     path.join(process.cwd(), 'client/dist'),
-    path.join(__dirname, 'client/dist'), // If built into server
-    path.join(process.cwd(), 'dist'), // If root is dist
-    path.join(__dirname, 'public') // Fallback
+    path.join(process.cwd(), 'public')
 ];
 
 let finalBuildPath = null;

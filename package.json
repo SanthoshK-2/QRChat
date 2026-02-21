@@ -7,6 +7,6 @@
     "start": "npm run server",
     "install-all": "npm install --prefix client && npm install --prefix server",
     "postinstall": "npm install --prefix server && npm install --prefix client",
-    "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client && echo 'Build complete. Checking dist:' && ls -R client/dist || echo 'Dist folder missing'"
+    "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client && mkdir -p server/public && cp -r client/dist/* server/public/"
   }
 }
