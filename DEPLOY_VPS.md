@@ -1,6 +1,6 @@
 # VPS Deployment Guide (Oracle Cloud / Ubuntu)
 
-This guide helps you deploy the QR Chat application on a Virtual Private Server (VPS) like Oracle Cloud Free Tier, as requested.
+This guide helps you deploy the QR Chat application on a Virtual Private Server (VPS) like Oracle Cloud Free Tier. It follows the "Reverse Proxy" architecture for better security and standard port usage (80/443).
 
 ## Prerequisites
 - An Oracle Cloud account and a created Ubuntu VPS instance.
@@ -11,7 +11,7 @@ This guide helps you deploy the QR Chat application on a Virtual Private Server 
 Update your system and install necessary tools:
 ```bash
 sudo apt update && sudo apt upgrade -y
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs nginx git
 sudo npm install -g pm2
 ```
@@ -48,6 +48,7 @@ nano server/.env
 # DB_USER=chate_user
 # DB_PASSWORD=your_password
 # DB_NAME=chate
+# PORT=5001
 ```
 
 Start the backend with PM2 using the provided config:
@@ -79,4 +80,23 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-Your application should now be live on your VPS IP address!
+## Step 6: Configure Firewall (Oracle Cloud)
+Go to your Oracle Cloud Dashboard -> Networking -> Security Lists -> Inbound Rules.
+Add the following rules:
+- **Source CIDR:** 0.0.0.0/0
+- **IP Protocol:** TCP
+- **Destination Port Range:** 80, 443
+- *(Optional)* **Destination Port Range:** 5001 (If you need direct backend access for debugging)
+
+## Step 7: Enable HTTPS (Free SSL)
+Secure your site with a free SSL certificate using Certbot:
+```bash
+sudo apt install certbot python3-certbot-nginx -y
+sudo certbot --nginx
+```
+Follow the prompts to select your domain and redirect HTTP to HTTPS.
+
+## Step 8: Final Verification
+Your application is now live at `https://your-domain.com` (or `http://YOUR_VPS_IP` if no domain).
+- The frontend connects automatically via the Nginx proxy (`/api` and `/socket.io`).
+- No manual code changes are needed for the IP address in `client/src/config.js` because it uses `window.location.origin` automatically.
