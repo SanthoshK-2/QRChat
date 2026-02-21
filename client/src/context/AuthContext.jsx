@@ -40,11 +40,10 @@ export const AuthProvider = ({ children }) => {
   const register = async (username, password, email) => {
     try {
       const encryptedPassword = encryptPayload(password);
-      const { data } = await api.post('/auth/register', { username, password: encryptedPassword, email, isEncrypted: true });
-      localStorage.setItem('token', data.token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
-      setUser(data);
-      return data;
+      // Register only returns success message, NOT token/user login
+      await api.post('/auth/register', { username, password: encryptedPassword, email, isEncrypted: true });
+      // Do not set user or token here
+      return true; 
     } catch (error) {
       throw error;
     }

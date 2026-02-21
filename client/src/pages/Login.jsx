@@ -143,12 +143,15 @@ const Login = () => {
     e.preventDefault();
     try {
       if (isLogin) {
-        await login(username, password); // Username field can be email or username
-        alert("Successfully Logined ");
+        await login(username, password); 
+        alert("Login Successful");
+        navigate('/');
       } else {
         await register(username, password, email);
+        alert("Registration Successful. Please Login.");
+        setIsLogin(true); // Switch to Login mode
+        setPassword(''); // Clear password for security
       }
-      navigate('/');
     } catch (error) {
       console.error("Login Error:", error);
       if (error.message === 'Network Error') {
