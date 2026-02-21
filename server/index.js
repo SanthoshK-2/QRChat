@@ -37,28 +37,35 @@ app.use('/api/calls', callRoutes);
 
 const fs = require('fs');
 
-// Robust path resolution for client build
-// Try multiple possible locations
-const possiblePaths = [
-    path.join(__dirname, 'public'), // Priority: Moved artifacts
-    path.join(__dirname, '../client/dist'),
-    path.join(process.cwd(), 'client/dist'),
-    path.join(process.cwd(), 'public')
-];
+// Priority: Check 'public' folder in current working directory (where server runs)
+// This matches the 'move strategy' where we copy dist to server/public
+const localPublicPath = path.join(process.cwd(), 'server/public');
+const localPublicPathFallback = path.join(__dirname, 'public');
 
 let finalBuildPath = null;
 
-for (const p of possiblePaths) {
-    if (fs.existsSync(path.join(p, 'index.html'))) {
-        finalBuildPath = p;
-        break;
+if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
+    finalBuildPath = localPublicPath;
+} else if (fs.existsSync(path.join(localPublicPathFallback, 'index.html'))) {
+    finalBuildPath = localPublicPathFallback;
+} else {
+    // Fallback to searching relative paths if move failed
+    const possiblePaths = [
+        path.join(__dirname, '../client/dist'),
+        path.join(process.cwd(), 'client/dist'),
+        path.join(process.cwd(), 'public')
+    ];
+    for (const p of possiblePaths) {
+        if (fs.existsSync(path.join(p, 'index.html'))) {
+            finalBuildPath = p;
+            break;
+        }
     }
 }
 
 if (!finalBuildPath) {
-    console.warn('WARNING: Could not find index.html in any expected location:', possiblePaths);
-    // Default to the first one just to have a path, but it will fail
-    finalBuildPath = possiblePaths[0];
+    console.warn('WARNING: Could not find index.html. Defaulting to local public path for debug.');
+    finalBuildPath = localPublicPath;
 } else {
     console.log('Serving static files from:', finalBuildPath);
 }
@@ -87,11 +94,11 @@ app.use((req, res) => {
                     <p>The server is running, but the React frontend build is missing.</p>
                     <p><strong>Debug Info:</strong></p>
                     <ul>
-                        <li>Checked Path: ${finalBuildPath}</li>
-                        <li>Current Directory (__dirname): ${__dirname}</li>
-                        <li>Process CWD: ${process.cwd()}</li>
+                        <li>Final Path Checked: ${finalBuildPath}</li>
+                        <li>Server CWD: ${process.cwd()}</li>
+                        <li>Server Dir: ${__dirname}</li>
+                        <li><strong>Note:</strong> We expected files at server/public</li>
                     </ul>
-                    <p><em>Please check the build logs on Render.</em></p>
                 </div>
             `);
         }
@@ -447,14 +454,26 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 5001;
 
-initializeDb().then(() => {
-    // alter: true can cause ER_TOO_MANY_KEYS in some MySQL versions/configs if run repeatedly
-    // Switching to standard sync() which creates if not exists, but doesn't alter.
-    sequelize.sync({ alter: false }).then(() => { 
-        server.listen(PORT, '0.0.0.0', () => {
-            console.log(`Server running on port ${PORT}`);
-        });
-    }).catch(err => {
-        console.error('Sequelize Sync Error:', err);
+// Start server regardless of DB status to ensure static files are served
+const startServer = () => {
+    server.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Static files path: ${finalBuildPath}`);
     });
+};
+
+initializeDb().then(async () => {
+    try {
+        // alter: true can cause ER_TOO_MANY_KEYS in some MySQL versions/configs if run repeatedly
+        // Switching to standard sync() which creates if not exists, but doesn't alter.
+        await sequelize.sync({ alter: false });
+        console.log('Database synced successfully');
+    } catch (err) {
+        console.error('Sequelize Sync Error (Non-fatal):', err);
+    }
+    startServer();
+}).catch(err => {
+    console.error('Initialization Error:', err);
+    // Even if init fails completely, try to start server for debug
+    startServer();
 });
