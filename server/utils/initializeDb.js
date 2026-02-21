@@ -72,7 +72,9 @@ const initializeDb = async () => {
         }
         
         // PRE-FIX: Clean up indexes before syncing to prevent "Too many keys" error
-        await cleanupExcessiveIndexes();
+        if (sequelize.getDialect() === 'mysql') {
+            await cleanupExcessiveIndexes();
+        }
 
         // Sync models
         await sequelize.sync({ alter: true }); 
@@ -80,9 +82,9 @@ const initializeDb = async () => {
         
     } catch (error) {
         console.error('Database connection/sync failed:', error.message);
-        console.error('CRITICAL: MySQL connection failed. Please check your .env configuration.');
-        // Do NOT fallback to SQLite. Fail hard to ensure MySQL is used.
-        process.exit(1);
+        console.warn('CRITICAL WARNING: Database initialization failed. Check your configuration.');
+        // Allow process to continue even if DB fails, to show logs
+        // process.exit(1); 
     }
 };
 

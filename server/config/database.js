@@ -1,20 +1,17 @@
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
-// Strictly enforce MySQL configuration
-if (process.env.DB_DIALECT !== 'mysql') {
-    console.warn("Warning: DB_DIALECT is not set to 'mysql'. Enforcing MySQL dialect.");
-}
-
 let sequelize;
 
 if (process.env.DATABASE_URL) {
+    console.log('Using DATABASE_URL from environment.');
     sequelize = new Sequelize(process.env.DATABASE_URL, {
         dialect: 'mysql',
         logging: false,
         pool: { max: 5, min: 0, acquire: 30000, idle: 10000 }
     });
-} else {
+} else if (process.env.DB_HOST && process.env.DB_USER) {
+    console.log('Using MySQL configuration from .env');
     sequelize = new Sequelize(
         process.env.DB_NAME,
         process.env.DB_USER,
@@ -26,16 +23,23 @@ if (process.env.DATABASE_URL) {
             pool: { max: 5, min: 0, acquire: 30000, idle: 10000 }
         }
     );
+} else {
+    console.log('No MySQL configuration found. Falling back to SQLite (Zero-Config Mode).');
+    sequelize = new Sequelize({
+        dialect: 'sqlite',
+        storage: './database.sqlite',
+        logging: false
+    });
 }
 
 // Verify connection immediately
 sequelize.authenticate()
     .then(() => {
-        console.log('MySQL Database connection has been established successfully.');
+        console.log(`Database connection has been established successfully (${sequelize.getDialect()}).`);
     })
     .catch(err => {
-        console.error('Unable to connect to the MySQL database:', err);
-        process.exit(1); // Exit if we can't connect to MySQL, as it's mandatory
+        console.error('Unable to connect to the database:', err);
+        // Do not exit process here, let it fail in initializeDb if critical
     });
 
 module.exports = sequelize;
