@@ -55,99 +55,63 @@ const fs = require('fs');
 // Extensive path resolution strategy
 // We are on Render, so paths might be weird. Let's look everywhere.
 // /opt/render/project/src is likely the root
-const parentPublicPath = path.join(__dirname, '../public'); // Robust relative path: server/../public -> root/public
-const rootPublic = path.join(process.cwd(), 'public'); // Root public (depends on CWD)
-const localPublicPath = path.join(process.cwd(), 'server/public'); // Legacy
-const renderRoot = '/opt/render/project/src';
-const renderRootPublic = path.join(renderRoot, 'public');
-const clientDistPath = path.join(__dirname, '../client/dist'); // Fallback: Directly from source build
-const cwdClientDistPath = path.join(process.cwd(), '../client/dist'); // Fallback relative to CWD
-const clientRootPath = path.join(__dirname, '../client');
+const localPublicPath = path.join(__dirname, 'public'); // Standard Express Pattern
 
 console.log('--- PATH DEBUG START ---');
 console.log('__dirname:', __dirname);
-console.log('process.cwd():', process.cwd());
-
-// Debug Client Directory
-console.log('Client Root Path:', clientRootPath, 'Exists:', fs.existsSync(clientRootPath));
-if (fs.existsSync(clientRootPath)) {
+console.log('localPublicPath:', localPublicPath, 'Exists:', fs.existsSync(localPublicPath));
+if (fs.existsSync(localPublicPath)) {
     try {
-        console.log('Client Directory Contents:', fs.readdirSync(clientRootPath));
-    } catch (e) { console.error('Error reading client dir:', e); }
+        console.log('Server Public Contents:', fs.readdirSync(localPublicPath));
+    } catch (e) { console.error(e); }
 }
-
-// Debug Client Dist
-console.log('Client Dist Path:', clientDistPath, 'Exists:', fs.existsSync(clientDistPath));
-if (fs.existsSync(clientDistPath)) {
-     try {
-        console.log('Client Dist Contents:', fs.readdirSync(clientDistPath));
-    } catch (e) { console.error('Error reading client dist:', e); }
-}
-
-console.log('Strategy 1 (Relative Public):', parentPublicPath, 'Exists:', fs.existsSync(parentPublicPath));
-if (fs.existsSync(parentPublicPath)) console.log('  Contents:', fs.readdirSync(parentPublicPath));
-
-console.log('Strategy 2 (CWD Root Public):', rootPublic, 'Exists:', fs.existsSync(rootPublic));
-if (fs.existsSync(rootPublic)) console.log('  Contents:', fs.readdirSync(rootPublic));
-
-console.log('Strategy 3 (Render Absolute Public):', renderRootPublic, 'Exists:', fs.existsSync(renderRootPublic));
-console.log('Strategy 4 (Client Dist Relative):', clientDistPath, 'Exists:', fs.existsSync(clientDistPath));
-if (fs.existsSync(clientDistPath)) console.log('  Contents:', fs.readdirSync(clientDistPath));
-
-console.log('Strategy 5 (Client Dist CWD):', cwdClientDistPath, 'Exists:', fs.existsSync(cwdClientDistPath));
-
-// Critical Debug: List everything in root to find where files are
-try {
-    const rootDir = path.resolve(__dirname, '..'); // Go up one level from server dir
-    console.log('Listing contents of root dir:', rootDir);
-    console.log(fs.readdirSync(rootDir));
-} catch (e) {
-    console.error('Failed to list root dir:', e);
-}
-
 console.log('--- PATH DEBUG END ---');
 
 let finalBuildPath = null;
 
-// Priority 1: Relative path (Most reliable as it doesn't depend on CWD)
-if (fs.existsSync(path.join(parentPublicPath, 'index.html'))) {
-    finalBuildPath = parentPublicPath;
-}
-// Priority 2: Absolute Render path (Safety net)
-else if (fs.existsSync(path.join(renderRootPublic, 'index.html'))) {
-    finalBuildPath = renderRootPublic;
-}
-// Priority 3: CWD based root public
-else if (fs.existsSync(path.join(rootPublic, 'index.html'))) {
-    finalBuildPath = rootPublic;
-}
-// Priority 4: Direct Client Dist (If move failed)
-else if (fs.existsSync(path.join(clientDistPath, 'index.html'))) {
-    finalBuildPath = clientDistPath;
-}
-// Priority 5: Legacy paths
-else if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
+// Priority 1: Standard server/public (The new build strategy)
+if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
     finalBuildPath = localPublicPath;
 }
-
-if (!finalBuildPath) {
-    console.error('CRITICAL: Could not find index.html in any expected location.');
-    // Try to list root directory to see what exists
-    try {
-        const rootDir = path.join(__dirname, '..');
-        console.log('Root Directory Listing:', fs.readdirSync(rootDir));
-    } catch (e) { console.error('Cannot list root dir', e); }
-    
-    // Default to Render absolute path as a hail mary
-    finalBuildPath = renderRootPublic;
-} else {
-    console.log('SUCCESS: Serving static files from:', finalBuildPath);
+// Priority 2: Fallback to client/dist (Direct access)
+else if (fs.existsSync(path.join(__dirname, '../client/dist/index.html'))) {
+    finalBuildPath = path.join(__dirname, '../client/dist');
 }
 
 if (!finalBuildPath) {
     console.error('CRITICAL: Could not find index.html in any expected location.');
-    // Default to Render absolute path as a hail mary
-    finalBuildPath = renderRootPublic;
+    
+    // Recursive search for index.html to find where it is hiding
+    let foundPath = null;
+    try {
+        const findFile = (dir) => {
+            if (foundPath) return;
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+                if (file === 'node_modules' || file === '.git') continue;
+                const fullPath = path.join(dir, file);
+                try {
+                    const stat = fs.statSync(fullPath);
+                    if (stat.isDirectory()) {
+                        findFile(fullPath);
+                    } else if (file === 'index.html') {
+                        foundPath = dir; // Found the directory containing index.html
+                        console.log('FOUND index.html at:', foundPath);
+                        return;
+                    }
+                } catch (e) {}
+            }
+        };
+        findFile(path.join(__dirname, '..')); // Search from root
+    } catch (e) { console.error('Search failed:', e); }
+
+    if (foundPath) {
+        finalBuildPath = foundPath;
+        console.log('Recovered using recursive search:', finalBuildPath);
+    } else {
+        // Absolute Hail Mary
+        finalBuildPath = path.join(__dirname, '../client/dist');
+    }
 } else {
     console.log('SUCCESS: Serving static files from:', finalBuildPath);
 }
@@ -170,6 +134,10 @@ app.use((req, res) => {
             res.sendFile(indexFile);
         } else {
             console.error('Frontend build not found at:', finalBuildPath);
+            // List contents of final path for debug
+            let contents = 'Cannot read directory';
+            try { contents = JSON.stringify(fs.readdirSync(finalBuildPath)); } catch(e) {}
+            
             res.status(404).send(`
                 <div style="font-family: sans-serif; padding: 20px;">
                     <h1>404 - Frontend Not Found</h1>
@@ -177,9 +145,8 @@ app.use((req, res) => {
                     <p><strong>Debug Info:</strong></p>
                     <ul>
                         <li>Final Path Checked: ${finalBuildPath}</li>
-                        <li>Server CWD: ${process.cwd()}</li>
+                        <li>Directory Contents: ${contents}</li>
                         <li>Server Dir: ${__dirname}</li>
-                        <li><strong>Note:</strong> We expected files at server/public</li>
                     </ul>
                 </div>
             `);
