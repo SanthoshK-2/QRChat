@@ -69,7 +69,7 @@ router.post('/restore', syncAuth, async (req, res) => {
             // Update password and uniqueCode to ensure credentials and IDs persist
             // hooks: false is CRITICAL to prevent re-hashing of already hashed passwords
             await User.bulkCreate(users, { 
-                updateOnDuplicate: ['username', 'email', 'password', 'uniqueCode', 'bio', 'profilePic', 'mode', 'isOnline', 'lastSeen'],
+                updateOnDuplicate: ['id', 'username', 'email', 'password', 'uniqueCode', 'bio', 'profilePic', 'mode', 'isOnline', 'lastSeen'],
                 hooks: false 
             });
         }
@@ -77,7 +77,7 @@ router.post('/restore', syncAuth, async (req, res) => {
         if (groups && groups.length > 0) {
             console.log(`Restoring ${groups.length} groups...`);
             await Group.bulkCreate(groups, { 
-                updateOnDuplicate: ['name', 'description', 'profilePic'],
+                updateOnDuplicate: ['id', 'name', 'description', 'profilePic'],
                 hooks: false
             });
         }
