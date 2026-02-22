@@ -7,6 +7,6 @@
     "start": "node server/index.js",
     "install-all": "npm install --prefix client && npm install --prefix server",
     "postinstall": "npm install --prefix server && npm install --prefix client",
-    "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client && echo 'Build Complete. Checking dist:' && ls -la client/dist && mkdir -p server/public && cp -r client/dist/* server/public/ && echo 'Copied to server/public'"
+    "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client && echo 'Checking client dist:' && ls -la client/dist && mkdir -p server/public && cp -R client/dist/* server/public/ && echo 'Copied to server/public. Verification:' && ls -la server/public"
   }
 }

@@ -55,23 +55,31 @@ const fs = require('fs');
 // Extensive path resolution strategy
 // We are on Render, so paths might be weird. Let's look everywhere.
 // /opt/render/project/src is likely the root
-const localPublicPath = path.join(__dirname, 'public'); // Standard Express Pattern
+const localPublicPath = path.join(__dirname, 'public'); 
+const renderRootPublic = '/opt/render/project/src/server/public'; // Explicit Render Path
 
-// Simple and robust path selection
+// Robust path selection
 let finalBuildPath = localPublicPath;
 
-// Safety Check: If standard path doesn't exist, try fallback
-if (!fs.existsSync(path.join(finalBuildPath, 'index.html'))) {
-    console.warn(`Standard path ${finalBuildPath} missing index.html. Checking fallbacks...`);
+// Priority 1: Check Render Absolute Path first (most reliable on platform)
+if (fs.existsSync(path.join(renderRootPublic, 'index.html'))) {
+    finalBuildPath = renderRootPublic;
+    console.log(`Using Render Absolute Path: ${finalBuildPath}`);
+}
+// Priority 2: Check Standard relative path
+else if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
+    finalBuildPath = localPublicPath;
+    console.log(`Using Local Public Path: ${finalBuildPath}`);
+}
+// Priority 3: Check Client Dist (Fallback)
+else {
     const fallbackPath = path.join(__dirname, '../client/dist');
     if (fs.existsSync(path.join(fallbackPath, 'index.html'))) {
         finalBuildPath = fallbackPath;
-        console.log(`Using fallback path: ${finalBuildPath}`);
+        console.log(`Using Fallback Client Path: ${finalBuildPath}`);
     } else {
-        console.error('CRITICAL: Could not find index.html in any expected location.');
+        console.error('CRITICAL: Could not find index.html anywhere.');
     }
-} else {
-    console.log(`SUCCESS: Serving static files from: ${finalBuildPath}`);
 }
 
 // Safety Check: Ensure we aren't serving source code
