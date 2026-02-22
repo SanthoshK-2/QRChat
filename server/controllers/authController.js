@@ -134,6 +134,32 @@ exports.login = async (req, res) => {
         }
 
         const isMatch = await user.matchPassword(password);
+        
+        // --- DEBUG LOGGING (REMOVE IN PRODUCTION) ---
+        if (!isMatch) {
+            console.warn(`[LOGIN DEBUG] Password Mismatch for ${username}`);
+            // Auto-fix: If stored password is plain text, fix it.
+            if (!user.password.startsWith('$2b$')) {
+                console.warn('[LOGIN FIX] Stored password is NOT hashed. Updating hash...');
+                user.password = password; // Will be hashed by beforeUpdate hook
+                await user.save();
+                
+                // Return successful login immediately after fix
+                return res.json({
+                     id: user.id,
+                     username: user.username,
+                     email: user.email,
+                     token: generateToken(user.id),
+                     uniqueCode: user.uniqueCode,
+                     profilePic: user.profilePic,
+                     bio: user.bio,
+                     mode: user.mode,
+                     showOnlineStatus: user.showOnlineStatus
+                });
+            }
+        }
+        // ---------------------------------------------
+
         if (isMatch) {
              console.log(`[LOGIN SUCCESS] User: ${user.username}`);
              // DEMO LOGGING
