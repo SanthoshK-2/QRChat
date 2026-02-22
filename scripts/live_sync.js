@@ -24,10 +24,13 @@ const User = sequelize.define('User', {
     id: { type: DataTypes.UUID, primaryKey: true },
     username: { type: DataTypes.STRING },
     email: { type: DataTypes.STRING },
+    password: { type: DataTypes.STRING }, // Include password for local login
     bio: { type: DataTypes.STRING },
+    profilePic: { type: DataTypes.TEXT },
     mode: { type: DataTypes.STRING },
     uniqueCode: { type: DataTypes.STRING },
     isOnline: { type: DataTypes.BOOLEAN },
+    showOnlineStatus: { type: DataTypes.BOOLEAN },
     lastSeen: { type: DataTypes.DATE },
     createdAt: { type: DataTypes.DATE },
     updatedAt: { type: DataTypes.DATE }
@@ -38,7 +41,7 @@ const Group = sequelize.define('Group', {
     name: { type: DataTypes.STRING },
     description: { type: DataTypes.STRING },
     createdBy: { type: DataTypes.UUID },
-    groupPic: { type: DataTypes.STRING },
+    profilePic: { type: DataTypes.TEXT }, // Changed from groupPic to match Model
     createdAt: { type: DataTypes.DATE },
     updatedAt: { type: DataTypes.DATE }
 });
@@ -58,8 +61,12 @@ const Message = sequelize.define('Message', {
     groupId: { type: DataTypes.UUID },     // Can be null for direct messages
     content: { type: DataTypes.TEXT },
     type: { type: DataTypes.STRING },
+    fileName: { type: DataTypes.STRING },  // Added
+    fileUrl: { type: DataTypes.TEXT },     // Added
     status: { type: DataTypes.STRING },
     isRead: { type: DataTypes.BOOLEAN },
+    isEdited: { type: DataTypes.BOOLEAN }, // Added
+    deletedAt: { type: DataTypes.DATE },   // Added
     createdAt: { type: DataTypes.DATE },
     updatedAt: { type: DataTypes.DATE }
 });

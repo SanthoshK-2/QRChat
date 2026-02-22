@@ -17,7 +17,8 @@ const syncAuth = (req, res, next) => {
 router.get('/full', syncAuth, async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'username', 'email', 'createdAt', 'bio', 'mode', 'uniqueCode', 'isOnline', 'lastSeen']
+            // Include password so it can be synced to local DB for login
+            attributes: ['id', 'username', 'email', 'password', 'createdAt', 'updatedAt', 'bio', 'profilePic', 'mode', 'uniqueCode', 'isOnline', 'showOnlineStatus', 'lastSeen']
         });
         
         const messages = await Message.findAll({
