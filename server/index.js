@@ -52,35 +52,42 @@ app.use('/api/calls', callRoutes);
 
 const fs = require('fs');
 
-// Extensive path resolution strategy
-// We are on Render, so paths might be weird. Let's look everywhere.
-// /opt/render/project/src is likely the root
+// Standard Express Pattern: server/public is the only place we care about now
 const localPublicPath = path.join(__dirname, 'public'); 
-const renderRootPublic = '/opt/render/project/src/server/public'; // Explicit Render Path
 
-// Robust path selection
-let finalBuildPath = localPublicPath;
+console.log('--- PATH DEBUG START ---');
+console.log('__dirname:', __dirname);
+console.log('CWD:', process.cwd());
 
-// Priority 1: Check Render Absolute Path first (most reliable on platform)
-if (fs.existsSync(path.join(renderRootPublic, 'index.html'))) {
-    finalBuildPath = renderRootPublic;
-    console.log(`Using Render Absolute Path: ${finalBuildPath}`);
-}
-// Priority 2: Check Standard relative path
-else if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
-    finalBuildPath = localPublicPath;
-    console.log(`Using Local Public Path: ${finalBuildPath}`);
-}
-// Priority 3: Check Client Dist (Fallback)
-else {
-    const fallbackPath = path.join(__dirname, '../client/dist');
-    if (fs.existsSync(path.join(fallbackPath, 'index.html'))) {
-        finalBuildPath = fallbackPath;
-        console.log(`Using Fallback Client Path: ${finalBuildPath}`);
-    } else {
-        console.error('CRITICAL: Could not find index.html anywhere.');
+// Robust Path Selection Strategy
+let finalBuildPath = null;
+const possiblePaths = [
+    localPublicPath,                                      // 1. server/public (Primary)
+    path.join(__dirname, '../client/dist'),               // 2. ../client/dist (Fallback if copy failed)
+    path.join(process.cwd(), 'client/dist'),              // 3. root/client/dist (If CWD is root)
+    path.join(process.cwd(), 'server/public'),            // 4. root/server/public (Explicit)
+    '/opt/render/project/src/server/public',              // 5. Absolute Render Path
+    '/opt/render/project/src/client/dist'                 // 6. Absolute Render Client Path
+];
+
+for (const p of possiblePaths) {
+    console.log(`Checking path: ${p}`);
+    if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
+        console.log(`FOUND VALID FRONTEND AT: ${p}`);
+        finalBuildPath = p;
+        break;
     }
 }
+
+if (!finalBuildPath) {
+    console.error('CRITICAL: Could not find index.html in ANY expected location.');
+    // Default to localPublicPath so we at least have a path to show 404 for
+    finalBuildPath = localPublicPath;
+} else {
+    console.log(`SUCCESS: Serving static files from: ${finalBuildPath}`);
+}
+
+console.log('--- PATH DEBUG END ---');
 
 // Safety Check: Ensure we aren't serving source code
 try {
@@ -120,7 +127,11 @@ app.use((req, res) => {
             console.error('Frontend build not found at:', finalBuildPath);
             // List contents of final path for debug
             let contents = 'Cannot read directory';
-            try { contents = JSON.stringify(fs.readdirSync(finalBuildPath)); } catch(e) {}
+            try { 
+                contents = JSON.stringify(fs.readdirSync(finalBuildPath)); 
+            } catch(e) {
+                contents = `Cannot read directory (${e.code}): ${e.message}`;
+            }
             
             res.status(404).send(`
                 <div style="font-family: sans-serif; padding: 20px;">
