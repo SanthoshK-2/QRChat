@@ -7,7 +7,13 @@ import { resolve } from 'path'
 export default defineConfig({
   plugins: [
     react(),
-    nodePolyfills(),
+    nodePolyfills({
+      globals: {
+        Buffer: true,
+        global: true,
+        process: true,
+      },
+    }),
   ],
   resolve: {
     alias: {
@@ -16,8 +22,8 @@ export default defineConfig({
     },
   },
   define: {
-    // Define global for libraries that expect it
-    global: 'globalThis',
+    // Avoid manual global definition if using nodePolyfills with globals: true
+    // global: 'globalThis', 
   },
   build: {
     outDir: 'dist',
