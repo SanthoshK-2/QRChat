@@ -23,3 +23,7 @@ services:
         value: chate
       - key: DB_DIALECT
         value: mysql
+      - key: APP_SECRET
+        value: chate-secure-transport-key-2024
+      - key: JWT_SECRET
+        generateValue: true

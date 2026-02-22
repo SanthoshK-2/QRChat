@@ -7,8 +7,13 @@ const validator = require('validator');
 const crypto = require('crypto');
 const CryptoJS = require('crypto-js');
 
+// Ensure we have a secret key for decryption
+// Fallback to the known client key if env var is missing (fixes Render deployment issue)
+const APP_SECRET = process.env.APP_SECRET || "chate-secure-transport-key-2024";
+const JWT_SECRET = process.env.JWT_SECRET || "chate-jwt-secret-fallback-2024";
+
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  return jwt.sign({ id }, JWT_SECRET, {
     expiresIn: '30d'
   });
 };
@@ -16,9 +21,10 @@ const generateToken = (id) => {
 // Helper to decrypt payload
 const decryptPayload = (ciphertext) => {
     try {
-        const bytes = CryptoJS.AES.decrypt(ciphertext, process.env.APP_SECRET);
+        const bytes = CryptoJS.AES.decrypt(ciphertext, APP_SECRET);
         return bytes.toString(CryptoJS.enc.Utf8);
     } catch (e) {
+        console.error('Decryption failed with secret:', APP_SECRET ? '***' : 'undefined');
         return null;
     }
 };
