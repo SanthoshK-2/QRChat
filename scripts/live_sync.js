@@ -82,146 +82,69 @@ const Connection = sequelize.define('Connection', {
 
 // --- MAIN SYNC FUNCTION ---
 async function syncData() {
-    console.log('--- STARTING REAL-TIME FULL DATA SYNC ---');
-    console.log(`Target: ${RENDER_API_URL}`);
-    console.log(`Local DB: ${process.env.DB_NAME} @ ${process.env.DB_HOST}`);
+    console.log('--- STARTING REAL-TIME BI-DIRECTIONAL SYNC ---');
+    console.log(`Cloud: ${RENDER_API_URL}`);
+    console.log(`Local: ${process.env.DB_NAME} @ ${process.env.DB_HOST}`);
 
     try {
-        // 1. Fetch Full Data from Render
-        console.log('Fetching all data from Live Server...');
-        const response = await axios.get(RENDER_API_URL, {
+        // Connect to Local MySQL
+        await sequelize.authenticate();
+        await sequelize.sync();
+
+        // 1. PULL: Cloud -> Local
+        console.log('\n[PULL] Checking Cloud data...');
+        const response = await axios.get(`${RENDER_API_URL}/full`, {
             headers: { 'x-sync-key': SYNC_KEY }
         });
-        const { users, messages, groups, groupMembers, connections } = response.data;
+        const cloudData = response.data;
         
-        console.log(`FETCHED:`);
-        console.log(`- Users: ${users.length}`);
-        console.log(`- Groups: ${groups.length}`);
-        console.log(`- Members: ${groupMembers.length}`);
-        console.log(`- Messages: ${messages.length}`);
-        console.log(`- Connections: ${connections.length}`);
-
-        // 2. Connect to Local MySQL
-        await sequelize.authenticate();
-        console.log('Connected to Local MySQL.');
-        
-        // Sync tables (ensure they exist)
-        // Note: In a real app we might not want to force sync, but for this demo tool it's safer
-        await sequelize.sync(); 
-
-        // 3. Insert Data in Dependency Order
-        
-        // A. USERS
-        console.log('Syncing Users...');
-        for (const item of users) {
-            await User.upsert(item);
-        }
-
-        // B. GROUPS (Depend on Users for createdBy)
-        console.log('Syncing Groups...');
-        for (const item of groups) {
-            await Group.upsert(item);
-        }
-
-        // C. CONNECTIONS (Depend on Users)
-        console.log('Syncing Connections...');
-        for (const item of connections) {
-            await Connection.upsert(item);
-        }
-
-        // D. GROUP MEMBERS (Depend on Groups and Users)
-        console.log('Syncing Group Members...');
-        for (const item of groupMembers) {
-            await GroupMember.upsert(item);
-        }
-
-        // E. MESSAGES (Depend on Users and Groups)
-        console.log('Syncing Messages...');
-        for (const item of messages) {
-            await Message.upsert(item);
-        }
-
-        console.log(`--- FULL SYNC COMPLETE ---`);
-        console.log('All live data is now mirrored in your local MySQL Workbench.');
-
-        // --- PHASE 2: BI-DIRECTIONAL RESTORE (Push Local to Cloud if Cloud is empty) ---
-        if (remoteUsers.length === 0 || (remoteUsers.length < 5 && newCount === 0)) {
-             console.log('\n--- DETECTED POSSIBLE CLOUD DATA LOSS ---');
-             console.log('Initiating Restore to Cloud...');
-             
-             const localUsers = await User.findAll();
-             const localGroups = await Group.findAll();
-             const localConnections = await Connection.findAll();
-             const localMessages = await Message.findAll();
-             const localMembers = await GroupMember.findAll();
-
-             if (localUsers.length > 0) {
-                 console.log(`Pushing ${localUsers.length} users to Cloud...`);
-                 await axios.post(RENDER_API_URL.replace('/full', '/restore'), {
-                     users: localUsers,
-                     groups: localGroups,
-                     connections: localConnections,
-                     messages: localMessages,
-                     groupMembers: localMembers
-                 }, {
-                     headers: { 'x-sync-key': SYNC_KEY }
-                 });
-                 console.log('✅ RESTORE COMPLETE: Cloud database updated from Local backup.');
-             }
-        }
-
-    } catch (error) { // 4. BI-DIRECTIONAL SYNC (RESTORE TO CLOUD IF MISSING)
-        // This handles the Render Restart/Wipe issue automatically
-        console.log('\n--- CHECKING FOR DATA LOSS ON SERVER ---');
-        
+        // 2. SMART MERGE: Check if Local has more data than Cloud (Data Loss on Cloud)
         const localUsers = await User.findAll();
-        const remoteIds = new Set(users.map(u => u.id));
+        const localMessages = await Message.findAll();
+        const localConnections = await Connection.findAll();
         
-        const missingOnRemote = localUsers.filter(u => !remoteIds.has(u.id));
+        console.log(`\n[STATUS] Cloud Users: ${cloudData.users.length} | Local Users: ${localUsers.length}`);
         
-        if (missingOnRemote.length > 0) {
-            console.log(`⚠️  FOUND ${missingOnRemote.length} USERS MISSING ON SERVER!`);
-            console.log('   (Likely due to Render restart)');
-            console.log('   Initiating Auto-Restore...');
+        // If Cloud has significantly fewer users than Local (e.g. just the seed user), OR if local has messages but cloud has none
+        const cloudIsMissingData = (cloudData.users.length < localUsers.length) || 
+                                   (localMessages.length > 0 && cloudData.messages.length === 0) ||
+                                   (localConnections.length > 0 && cloudData.connections.length === 0);
 
-            // Prepare Payload
+        if (cloudIsMissingData) {
+            console.log('\n[PUSH] ⚠️  DETECTED DATA LOSS ON CLOUD (Render Restart?)');
+            console.log('[PUSH] Initiating Full Restore from Local Database...');
+            
             const payload = {
-                users: missingOnRemote.map(u => u.toJSON()),
-                // We could send other missing entities too, but let's start with users to fix login
-                // Ideally, we check all tables. For simplicity/speed in demo loop:
-                // If users are missing, we assume a wipe and push everything local back up.
+                users: localUsers,
+                groups: await Group.findAll(),
+                connections: localConnections,
+                groupMembers: await GroupMember.findAll(),
+                messages: localMessages
             };
 
-            // If we detected a wipe (users missing), let's push ALL local data just to be safe/complete
-            if (missingOnRemote.length > 0) {
-                payload.groups = (await Group.findAll()).map(i => i.toJSON());
-                payload.groupMembers = (await GroupMember.findAll()).map(i => i.toJSON());
-                payload.connections = (await Connection.findAll()).map(i => i.toJSON());
-                payload.messages = (await Message.findAll()).map(i => i.toJSON());
-            }
-
-            // Send Restore Request
-            console.log('Uploading local data to Cloud...');
-            try {
-                await axios.post(RENDER_API_URL.replace('/full', '/restore'), payload, {
-                    headers: { 'x-sync-key': SYNC_KEY },
-                    maxBodyLength: Infinity,
-                    maxContentLength: Infinity
-                });
-                console.log('✅ AUTO-RESTORE SUCCESSFUL. Users can login again.');
-            } catch (restoreErr) {
-                console.error('❌ AUTO-RESTORE FAILED:', restoreErr.message);
-            }
-
+            // Push to Render
+            await axios.post('https://qrchat-1.onrender.com/api/sync/restore', payload, {
+                headers: { 'x-sync-key': SYNC_KEY },
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity
+            });
+            console.log('✅ [PUSH] SUCCESS: Cloud database restored from Local Backup!');
+            console.log('   All users, chats, and connections are back online.');
         } else {
-            console.log('✅ Server data is intact. No restore needed.');
+            console.log('[PULL] Cloud appears healthy. Syncing changes to Local...');
+            // Standard Pull: Cloud -> Local
+            if (cloudData.users.length > 0) {
+                for (const item of cloudData.users) await User.upsert(item);
+                for (const item of cloudData.groups) await Group.upsert(item);
+                for (const item of cloudData.connections) await Connection.upsert(item);
+                for (const item of cloudData.groupMembers) await GroupMember.upsert(item);
+                for (const item of cloudData.messages) await Message.upsert(item);
+                console.log('[PULL] Local database updated from Cloud.');
+            }
         }
 
     } catch (error) {
         console.error('SYNC FAILED:', error.message);
-        if (error.response) {
-            console.error('Server Response:', error.response.status, error.response.data);
-        }
     } finally {
         await sequelize.close();
     }
