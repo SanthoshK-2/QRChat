@@ -17,8 +17,8 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      // FORCE simple-peer to use the MINIFIED version to avoid node-stream issues
-      'simple-peer': 'simple-peer/simplepeer.min.js',
+      // Allow vite-plugin-node-polyfills to handle simple-peer
+      // 'simple-peer': 'simple-peer/simplepeer.min.js',
     },
   },
   define: {

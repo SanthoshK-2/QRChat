@@ -17,6 +17,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import GlobalStyle from './styles/GlobalStyle';
 
 function App() {
+  console.log('App component rendering...');
   return (
     <ErrorBoundary>
       <ThemeProvider>

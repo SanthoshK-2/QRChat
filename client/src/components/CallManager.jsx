@@ -1,6 +1,8 @@
-import React, { useContext } from 'react';
+import React, { useContext, Suspense, lazy } from 'react';
 import CallContext from '../context/CallContext';
-import VideoCall from './VideoCall';
+
+// Lazy load VideoCall to prevent simple-peer initialization from crashing the app on startup
+const VideoCall = lazy(() => import('./VideoCall'));
 
 const CallManager = () => {
     const { 
@@ -22,14 +24,16 @@ const CallManager = () => {
     } : null;
 
     return (
-        <VideoCall
-            otherUserId={otherUser?.id}
-            otherUserName={otherUser?.username}
-            isCaller={isCaller}
-            callType={callType}
-            incomingCallData={incomingCallData}
-            onClose={resetCall}
-        />
+        <Suspense fallback={null}>
+            <VideoCall
+                otherUserId={otherUser?.id}
+                otherUserName={otherUser?.username}
+                isCaller={isCaller}
+                callType={callType}
+                incomingCallData={incomingCallData}
+                onClose={resetCall}
+            />
+        </Suspense>
     );
 };
 
