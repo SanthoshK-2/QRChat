@@ -41,15 +41,18 @@ const fs = require('fs');
 // We are on Render, so paths might be weird. Let's look everywhere.
 // /opt/render/project/src is likely the root
 const renderRoot = '/opt/render/project/src';
+const rootPublic = path.join(process.cwd(), 'public'); // Root public (Simpler Move Strategy)
 const localPublicPath = path.join(process.cwd(), 'server/public');
 const localPublicPathFallback = path.join(__dirname, 'public');
 const clientDistPath = path.join(__dirname, '../client/dist');
 const cwdClientDistPath = path.join(process.cwd(), 'client/dist');
 const renderServerPublic = path.join(renderRoot, 'server/public');
+const renderRootPublic = path.join(renderRoot, 'public');
 
 console.log('--- PATH DEBUG START ---');
 console.log('__dirname:', __dirname);
 console.log('process.cwd():', process.cwd());
+console.log('rootPublic:', rootPublic, 'Exists:', fs.existsSync(rootPublic));
 console.log('localPublicPath:', localPublicPath, 'Exists:', fs.existsSync(localPublicPath));
 console.log('renderServerPublic:', renderServerPublic, 'Exists:', fs.existsSync(renderServerPublic));
 console.log('--- PATH DEBUG END ---');
@@ -57,22 +60,26 @@ console.log('--- PATH DEBUG END ---');
 let finalBuildPath = null;
 
 // Strategy 0: Render Absolute Path (Highest Priority)
-if (fs.existsSync(path.join(renderServerPublic, 'index.html'))) {
-    finalBuildPath = renderServerPublic;
+if (fs.existsSync(path.join(renderRootPublic, 'index.html'))) {
+    finalBuildPath = renderRootPublic;
 }
-// Strategy 1: Check 'server/public' (Preferred - Copied artifacts)
+// Strategy 1: Check root 'public' (Simpler Move Strategy)
+else if (fs.existsSync(path.join(rootPublic, 'index.html'))) {
+    finalBuildPath = rootPublic;
+}
+// Strategy 2: Check 'server/public' (Old Move Strategy)
 else if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
     finalBuildPath = localPublicPath;
 } 
-// Strategy 2: Check standard client dist relative to server file
+// Strategy 3: Check standard client dist relative to server file
 else if (fs.existsSync(path.join(clientDistPath, 'index.html'))) {
     finalBuildPath = clientDistPath;
 }
-// Strategy 3: Check client dist relative to CWD
+// Strategy 4: Check client dist relative to CWD
 else if (fs.existsSync(path.join(cwdClientDistPath, 'index.html'))) {
     finalBuildPath = cwdClientDistPath;
 }
-// Strategy 4: Fallback to local 'public'
+// Strategy 5: Fallback to local 'public'
 else if (fs.existsSync(path.join(localPublicPathFallback, 'index.html'))) {
     finalBuildPath = localPublicPathFallback;
 }
@@ -80,7 +87,7 @@ else if (fs.existsSync(path.join(localPublicPathFallback, 'index.html'))) {
 if (!finalBuildPath) {
     console.error('CRITICAL: Could not find index.html in any expected location.');
     // Default to Render absolute path as a hail mary
-    finalBuildPath = renderServerPublic;
+    finalBuildPath = renderRootPublic;
 } else {
     console.log('SUCCESS: Serving static files from:', finalBuildPath);
 }
