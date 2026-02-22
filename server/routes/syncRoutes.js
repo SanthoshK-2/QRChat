@@ -76,22 +76,34 @@ router.post('/restore', syncAuth, async (req, res) => {
 
         if (groups && groups.length > 0) {
             console.log(`Restoring ${groups.length} groups...`);
-            await Group.bulkCreate(groups, { updateOnDuplicate: ['name', 'description', 'profilePic'] });
+            await Group.bulkCreate(groups, { 
+                updateOnDuplicate: ['name', 'description', 'profilePic'],
+                hooks: false
+            });
         }
 
         if (groupMembers && groupMembers.length > 0) {
             console.log(`Restoring ${groupMembers.length} group members...`);
-            await GroupMember.bulkCreate(groupMembers, { ignoreDuplicates: true });
+            await GroupMember.bulkCreate(groupMembers, { 
+                ignoreDuplicates: true,
+                hooks: false
+            });
         }
 
         if (connections && connections.length > 0) {
             console.log(`Restoring ${connections.length} connections...`);
-            await Connection.bulkCreate(connections, { updateOnDuplicate: ['status'] });
+            await Connection.bulkCreate(connections, { 
+                updateOnDuplicate: ['status'],
+                hooks: false
+            });
         }
 
         if (messages && messages.length > 0) {
             console.log(`Restoring ${messages.length} messages...`);
-            await Message.bulkCreate(messages, { updateOnDuplicate: ['status', 'isRead', 'isEdited', 'deletedAt'] });
+            await Message.bulkCreate(messages, { 
+                updateOnDuplicate: ['status', 'isRead', 'isEdited', 'deletedAt', 'content'],
+                hooks: false
+            });
         }
 
         console.log('--- RESTORE COMPLETE ---');

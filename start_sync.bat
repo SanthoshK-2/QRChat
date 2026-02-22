@@ -6,8 +6,9 @@ echo ===================================================
 echo    QR CHAT - LIVE DATA SYNC (RENDER -> LOCAL)
 echo ===================================================
 echo.
-echo [INFO] This script pulls user data from the LIVE website
-echo [INFO] and saves it to your LOCAL MySQL Workbench.
+echo [INFO] This script syncs data between LIVE website and LOCAL MySQL.
+echo [INFO] It AUTOMATICALLY RESTORES data if the Cloud server restarts.
+echo [INFO] Keep this window open to ensure permanent data safety.
 echo.
 echo Press any key to start syncing...
 pause >nul

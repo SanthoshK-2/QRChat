@@ -4,7 +4,7 @@ const axios = require('axios');
 const { Sequelize, DataTypes } = require('sequelize');
 
 // --- CONFIGURATION ---
-const RENDER_API_URL = 'https://qrchat-1.onrender.com/api/sync/full';
+const RENDER_API_URL = 'https://qrchat-1.onrender.com/api/sync';
 const SYNC_KEY = 'chate-secure-sync-2024';
 
 // --- LOCAL DB CONNECTION ---
@@ -106,12 +106,26 @@ async function syncData() {
         const localConnections = await Connection.findAll();
         
         console.log(`\n[STATUS] Cloud Users: ${cloudData.users.length} | Local Users: ${localUsers.length}`);
+        console.log(`[STATUS] Cloud Connections: ${cloudData.connections.length} | Local Connections: ${localConnections.length}`);
+        console.log(`[STATUS] Cloud Messages: ${cloudData.messages.length} | Local Messages: ${localMessages.length}`);
         
         let dataIntegrityIssue = false;
         
         // Check for count mismatch
         if (cloudData.users.length < localUsers.length) {
             console.log('[CHECK] User count mismatch: Cloud has fewer users.');
+            dataIntegrityIssue = true;
+        }
+
+        // Check for Connection mismatch
+        if (cloudData.connections.length < localConnections.length) {
+            console.log('[CHECK] Connection count mismatch: Cloud has fewer connections.');
+            dataIntegrityIssue = true;
+        }
+
+        // Check for Message mismatch
+        if (cloudData.messages.length < localMessages.length) {
+            console.log('[CHECK] Message count mismatch: Cloud has fewer messages.');
             dataIntegrityIssue = true;
         }
 
