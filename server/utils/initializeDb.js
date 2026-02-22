@@ -93,10 +93,27 @@ const initializeDb = async () => {
         
         // Auto-seed default user if not exists (Fixes "Invalid credentials" on fresh deploy)
         try {
-            const userCount = await User.count();
-            if (userCount === 0) {
-                console.log('Database is empty. No auto-seeding enabled.');
-                // Seeding Removed as per user request to delete demo users
+            // Check if the specific admin/owner user exists
+            const adminUser = await User.findOne({ 
+                where: { email: 'santhoshkvkd222@gmail.com' } 
+            });
+
+            if (!adminUser) {
+                console.log('Admin user missing (likely due to fresh deploy). Restoring...');
+                
+                await User.create({
+                    username: 'santhosh',
+                    email: 'santhoshkvkd222@gmail.com',
+                    password: 'vkdsanthosh2', // Will be hashed automatically
+                    bio: 'God Bless yoU',
+                    mode: 'global',
+                    showOnlineStatus: true,
+                    uniqueCode: '123456',
+                    profilePic: '/uploads/1770291485365.jpeg' // Try to preserve the pic path if possible
+                });
+                console.log('✅ RESTORED USER: santhosh / santhoshkvkd222@gmail.com');
+            } else {
+                console.log('Admin user already exists.');
             }
         } catch (seedError) {
             console.error('Seeding check failed:', seedError.message);
