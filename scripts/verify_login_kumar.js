@@ -1,5 +1,6 @@
-require('dotenv').config({ path: '../server/.env' });
-const { Sequelize } = require('sequelize');
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../server/.env') });
+const { Sequelize, DataTypes } = require('sequelize');
 const bcrypt = require('bcrypt');
 
 async function verifyCredentials(identifier, password) {
