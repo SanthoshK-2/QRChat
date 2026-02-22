@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { User, Message, Group, GroupMember, Connection } = require('../models');
+const { User, Message, Group, GroupMember, Connection, CallHistory } = require('../models');
 
 // Secure middleware - simple protection for this sync endpoint
 const syncAuth = (req, res, next) => {
@@ -31,12 +31,15 @@ router.get('/full', syncAuth, async (req, res) => {
         
         const connections = await Connection.findAll();
 
+        const callHistory = await CallHistory.findAll();
+
         res.json({
             users,
             messages,
             groups,
             groupMembers,
-            connections
+            connections,
+            callHistory
         });
     } catch (error) {
         console.error('Sync Error:', error);
@@ -60,7 +63,7 @@ router.get('/users', syncAuth, async (req, res) => {
 // Endpoint for local script to PUSH data back to Render (Restore/Bi-directional Sync)
 router.post('/restore', syncAuth, async (req, res) => {
     try {
-        const { users, messages, groups, groupMembers, connections } = req.body;
+        const { users, messages, groups, groupMembers, connections, callHistory } = req.body;
         
         console.log('--- RESTORE REQUEST RECEIVED ---');
         
@@ -102,6 +105,14 @@ router.post('/restore', syncAuth, async (req, res) => {
             console.log(`Restoring ${messages.length} messages...`);
             await Message.bulkCreate(messages, { 
                 updateOnDuplicate: ['status', 'isRead', 'isEdited', 'deletedAt', 'content'],
+                hooks: false
+            });
+        }
+
+        if (callHistory && callHistory.length > 0) {
+            console.log(`Restoring ${callHistory.length} calls...`);
+            await CallHistory.bulkCreate(callHistory, { 
+                updateOnDuplicate: ['status', 'duration', 'endedAt'],
                 hooks: false
             });
         }

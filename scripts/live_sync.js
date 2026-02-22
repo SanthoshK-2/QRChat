@@ -81,6 +81,17 @@ const Connection = sequelize.define('Connection', {
     updatedAt: { type: DataTypes.DATE }
 });
 
+const CallHistory = sequelize.define('CallHistory', {
+    id: { type: DataTypes.INTEGER, primaryKey: true },
+    callerId: { type: DataTypes.UUID },
+    receiverId: { type: DataTypes.UUID },
+    type: { type: DataTypes.STRING },
+    status: { type: DataTypes.STRING },
+    duration: { type: DataTypes.INTEGER },
+    startedAt: { type: DataTypes.DATE },
+    endedAt: { type: DataTypes.DATE }
+});
+
 // --- MAIN SYNC FUNCTION ---
 async function syncData() {
     console.log('--- STARTING REAL-TIME BI-DIRECTIONAL SYNC ---');
@@ -104,10 +115,12 @@ async function syncData() {
         const localUsers = await User.findAll();
         const localMessages = await Message.findAll();
         const localConnections = await Connection.findAll();
+        const localCallHistory = await CallHistory.findAll();
         
         console.log(`\n[STATUS] Cloud Users: ${cloudData.users.length} | Local Users: ${localUsers.length}`);
         console.log(`[STATUS] Cloud Connections: ${cloudData.connections.length} | Local Connections: ${localConnections.length}`);
         console.log(`[STATUS] Cloud Messages: ${cloudData.messages.length} | Local Messages: ${localMessages.length}`);
+        console.log(`[STATUS] Cloud Calls: ${cloudData.callHistory?.length || 0} | Local Calls: ${localCallHistory.length}`);
         
         let dataIntegrityIssue = false;
         
@@ -126,6 +139,12 @@ async function syncData() {
         // Check for Message mismatch
         if (cloudData.messages.length < localMessages.length) {
             console.log('[CHECK] Message count mismatch: Cloud has fewer messages.');
+            dataIntegrityIssue = true;
+        }
+
+        // Check for Call History mismatch
+        if ((cloudData.callHistory?.length || 0) < localCallHistory.length) {
+            console.log('[CHECK] Call history mismatch: Cloud has fewer calls.');
             dataIntegrityIssue = true;
         }
 
@@ -156,7 +175,8 @@ async function syncData() {
                 groups: await Group.findAll(),
                 connections: localConnections,
                 groupMembers: await GroupMember.findAll(),
-                messages: localMessages
+                messages: localMessages,
+                callHistory: localCallHistory
             };
 
             // Push to Render
@@ -176,6 +196,9 @@ async function syncData() {
                 for (const item of cloudData.connections) await Connection.upsert(item);
                 for (const item of cloudData.groupMembers) await GroupMember.upsert(item);
                 for (const item of cloudData.messages) await Message.upsert(item);
+                if (cloudData.callHistory) {
+                    for (const item of cloudData.callHistory) await CallHistory.upsert(item);
+                }
                 console.log('[PULL] Local database updated from Cloud.');
             }
         }
