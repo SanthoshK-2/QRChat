@@ -38,22 +38,30 @@ app.use('/api/calls', callRoutes);
 const fs = require('fs');
 
 // Extensive path resolution strategy
+// We are on Render, so paths might be weird. Let's look everywhere.
+// /opt/render/project/src is likely the root
+const renderRoot = '/opt/render/project/src';
 const localPublicPath = path.join(process.cwd(), 'server/public');
 const localPublicPathFallback = path.join(__dirname, 'public');
 const clientDistPath = path.join(__dirname, '../client/dist');
 const cwdClientDistPath = path.join(process.cwd(), 'client/dist');
+const renderServerPublic = path.join(renderRoot, 'server/public');
 
 console.log('--- PATH DEBUG START ---');
 console.log('__dirname:', __dirname);
 console.log('process.cwd():', process.cwd());
 console.log('localPublicPath:', localPublicPath, 'Exists:', fs.existsSync(localPublicPath));
-console.log('clientDistPath:', clientDistPath, 'Exists:', fs.existsSync(clientDistPath));
+console.log('renderServerPublic:', renderServerPublic, 'Exists:', fs.existsSync(renderServerPublic));
 console.log('--- PATH DEBUG END ---');
 
 let finalBuildPath = null;
 
+// Strategy 0: Render Absolute Path (Highest Priority)
+if (fs.existsSync(path.join(renderServerPublic, 'index.html'))) {
+    finalBuildPath = renderServerPublic;
+}
 // Strategy 1: Check 'server/public' (Preferred - Copied artifacts)
-if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
+else if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
     finalBuildPath = localPublicPath;
 } 
 // Strategy 2: Check standard client dist relative to server file
@@ -71,8 +79,8 @@ else if (fs.existsSync(path.join(localPublicPathFallback, 'index.html'))) {
 
 if (!finalBuildPath) {
     console.error('CRITICAL: Could not find index.html in any expected location.');
-    // Default to a safe path to prevent crash, but 404 will show
-    finalBuildPath = localPublicPath;
+    // Default to Render absolute path as a hail mary
+    finalBuildPath = renderServerPublic;
 } else {
     console.log('SUCCESS: Serving static files from:', finalBuildPath);
 }

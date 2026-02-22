@@ -39,7 +39,13 @@ sequelize.authenticate()
     })
     .catch(err => {
         console.error('Unable to connect to the database:', err);
-        // Do not exit process here, let it fail in initializeDb if critical
+        console.warn('Falling back to SQLite due to connection failure.');
+        // Emergency Fallback: If MySQL fails, switch to SQLite in memory to keep server alive
+        sequelize = new Sequelize({
+            dialect: 'sqlite',
+            storage: './database.sqlite',
+            logging: false
+        });
     });
 
 module.exports = sequelize;
