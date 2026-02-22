@@ -24,9 +24,9 @@ function App() {
           <SocketProvider>
             <CallProvider>
               <GlobalStyle />
-              <CallManager />
               <Router>
-              <Routes>
+                <CallManager />
+                <Routes>
                   <Route path="/login" element={<Login />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -36,8 +36,8 @@ function App() {
                   <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                   <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                   <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </Router>
+                </Routes>
+              </Router>
             </CallProvider>
           </SocketProvider>
         </AuthProvider>
