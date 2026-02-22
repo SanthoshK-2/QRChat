@@ -27,6 +27,21 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Health Check Route
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date(),
+        uptime: process.uptime(),
+        paths: {
+            cwd: process.cwd(),
+            __dirname: __dirname,
+            finalBuildPath: finalBuildPath,
+            exists: finalBuildPath ? fs.existsSync(finalBuildPath) : false
+        }
+    });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/connections', connectionRoutes);
@@ -40,54 +55,75 @@ const fs = require('fs');
 // Extensive path resolution strategy
 // We are on Render, so paths might be weird. Let's look everywhere.
 // /opt/render/project/src is likely the root
+const parentPublicPath = path.join(__dirname, '../public'); // Robust relative path: server/../public -> root/public
+const rootPublic = path.join(process.cwd(), 'public'); // Root public (depends on CWD)
+const localPublicPath = path.join(process.cwd(), 'server/public'); // Legacy
 const renderRoot = '/opt/render/project/src';
-const rootPublic = path.join(process.cwd(), 'public'); // Root public (Simpler Move Strategy)
-const localPublicPath = path.join(process.cwd(), 'server/public');
-const localPublicPathFallback = path.join(__dirname, 'public');
-const clientDistPath = path.join(__dirname, '../client/dist');
-const cwdClientDistPath = path.join(process.cwd(), 'client/dist');
-const parentPublicPath = path.join(__dirname, '../public'); // Robust relative path from server dir
-const renderServerPublic = path.join(renderRoot, 'server/public');
 const renderRootPublic = path.join(renderRoot, 'public');
+const clientDistPath = path.join(__dirname, '../client/dist'); // Fallback: Directly from source build
+const cwdClientDistPath = path.join(process.cwd(), '../client/dist'); // Fallback relative to CWD
 
 console.log('--- PATH DEBUG START ---');
 console.log('__dirname:', __dirname);
 console.log('process.cwd():', process.cwd());
-console.log('parentPublicPath:', parentPublicPath, 'Exists:', fs.existsSync(parentPublicPath));
-console.log('rootPublic:', rootPublic, 'Exists:', fs.existsSync(rootPublic));
-console.log('localPublicPath:', localPublicPath, 'Exists:', fs.existsSync(localPublicPath));
-console.log('renderServerPublic:', renderServerPublic, 'Exists:', fs.existsSync(renderServerPublic));
+console.log('Strategy 1 (Relative Public):', parentPublicPath, 'Exists:', fs.existsSync(parentPublicPath));
+if (fs.existsSync(parentPublicPath)) console.log('  Contents:', fs.readdirSync(parentPublicPath));
+
+console.log('Strategy 2 (CWD Root Public):', rootPublic, 'Exists:', fs.existsSync(rootPublic));
+if (fs.existsSync(rootPublic)) console.log('  Contents:', fs.readdirSync(rootPublic));
+
+console.log('Strategy 3 (Render Absolute Public):', renderRootPublic, 'Exists:', fs.existsSync(renderRootPublic));
+console.log('Strategy 4 (Client Dist Relative):', clientDistPath, 'Exists:', fs.existsSync(clientDistPath));
+if (fs.existsSync(clientDistPath)) console.log('  Contents:', fs.readdirSync(clientDistPath));
+
+console.log('Strategy 5 (Client Dist CWD):', cwdClientDistPath, 'Exists:', fs.existsSync(cwdClientDistPath));
+
+// Critical Debug: List everything in root to find where files are
+try {
+    const rootDir = path.resolve(__dirname, '..'); // Go up one level from server dir
+    console.log('Listing contents of root dir:', rootDir);
+    console.log(fs.readdirSync(rootDir));
+} catch (e) {
+    console.error('Failed to list root dir:', e);
+}
+
 console.log('--- PATH DEBUG END ---');
 
 let finalBuildPath = null;
 
-// Strategy 0: Render Absolute Path (Highest Priority)
-if (fs.existsSync(path.join(renderRootPublic, 'index.html'))) {
-    finalBuildPath = renderRootPublic;
-}
-// Strategy 0.5: Relative from server file (Robust)
-else if (fs.existsSync(path.join(parentPublicPath, 'index.html'))) {
+// Priority 1: Relative path (Most reliable as it doesn't depend on CWD)
+if (fs.existsSync(path.join(parentPublicPath, 'index.html'))) {
     finalBuildPath = parentPublicPath;
 }
-// Strategy 1: Check root 'public' (Simpler Move Strategy)
+// Priority 2: Absolute Render path (Safety net)
+else if (fs.existsSync(path.join(renderRootPublic, 'index.html'))) {
+    finalBuildPath = renderRootPublic;
+}
+// Priority 3: CWD based root public
 else if (fs.existsSync(path.join(rootPublic, 'index.html'))) {
     finalBuildPath = rootPublic;
 }
-// Strategy 2: Check 'server/public' (Old Move Strategy)
-else if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
-    finalBuildPath = localPublicPath;
-} 
-// Strategy 3: Check standard client dist relative to server file
+// Priority 4: Direct Client Dist (If move failed)
 else if (fs.existsSync(path.join(clientDistPath, 'index.html'))) {
     finalBuildPath = clientDistPath;
 }
-// Strategy 4: Check client dist relative to CWD
-else if (fs.existsSync(path.join(cwdClientDistPath, 'index.html'))) {
-    finalBuildPath = cwdClientDistPath;
+// Priority 5: Legacy paths
+else if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
+    finalBuildPath = localPublicPath;
 }
-// Strategy 5: Fallback to local 'public'
-else if (fs.existsSync(path.join(localPublicPathFallback, 'index.html'))) {
-    finalBuildPath = localPublicPathFallback;
+
+if (!finalBuildPath) {
+    console.error('CRITICAL: Could not find index.html in any expected location.');
+    // Try to list root directory to see what exists
+    try {
+        const rootDir = path.join(__dirname, '..');
+        console.log('Root Directory Listing:', fs.readdirSync(rootDir));
+    } catch (e) { console.error('Cannot list root dir', e); }
+    
+    // Default to Render absolute path as a hail mary
+    finalBuildPath = renderRootPublic;
+} else {
+    console.log('SUCCESS: Serving static files from:', finalBuildPath);
 }
 
 if (!finalBuildPath) {
