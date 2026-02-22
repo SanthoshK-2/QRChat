@@ -144,7 +144,33 @@ async function syncData() {
         console.log(`--- FULL SYNC COMPLETE ---`);
         console.log('All live data is now mirrored in your local MySQL Workbench.');
 
-        // 4. BI-DIRECTIONAL SYNC (RESTORE TO CLOUD IF MISSING)
+        // --- PHASE 2: BI-DIRECTIONAL RESTORE (Push Local to Cloud if Cloud is empty) ---
+        if (remoteUsers.length === 0 || (remoteUsers.length < 5 && newCount === 0)) {
+             console.log('\n--- DETECTED POSSIBLE CLOUD DATA LOSS ---');
+             console.log('Initiating Restore to Cloud...');
+             
+             const localUsers = await User.findAll();
+             const localGroups = await Group.findAll();
+             const localConnections = await Connection.findAll();
+             const localMessages = await Message.findAll();
+             const localMembers = await GroupMember.findAll();
+
+             if (localUsers.length > 0) {
+                 console.log(`Pushing ${localUsers.length} users to Cloud...`);
+                 await axios.post(RENDER_API_URL.replace('/full', '/restore'), {
+                     users: localUsers,
+                     groups: localGroups,
+                     connections: localConnections,
+                     messages: localMessages,
+                     groupMembers: localMembers
+                 }, {
+                     headers: { 'x-sync-key': SYNC_KEY }
+                 });
+                 console.log('✅ RESTORE COMPLETE: Cloud database updated from Local backup.');
+             }
+        }
+
+    } catch (error) { // 4. BI-DIRECTIONAL SYNC (RESTORE TO CLOUD IF MISSING)
         // This handles the Render Restart/Wipe issue automatically
         console.log('\n--- CHECKING FOR DATA LOSS ON SERVER ---');
         

@@ -102,10 +102,10 @@ const initializeDb = async () => {
                 console.log('Admin user missing (likely due to fresh deploy). Restoring...');
                 
                 await User.create({
-                    id: '2f5c62ed-4fbc-40db-b34b-1ede753c571c', // FIXED UUID for Santhosh to allow sync matching
+                    id: '2f5c62ed-4fbc-40db-b34b-1ede753c571c', // FIXED ID to prevent duplicates
                     username: 'santhosh',
                     email: 'santhoshkvkd222@gmail.com',
-                    password: 'vkdsanthosh2', // Will be hashed automatically
+                    password: 'vkdsanthosh2', 
                     bio: 'God Bless yoU',
                     mode: 'global',
                     showOnlineStatus: true,
