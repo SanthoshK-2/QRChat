@@ -79,6 +79,16 @@ const initializeDb = async () => {
         // Sync models
         await sequelize.sync({ alter: true }); 
         console.log('Models synchronized');
+
+        // Report User Count
+        const userCount = await User.count();
+        console.log(`\n--- DATABASE STATUS ---`);
+        console.log(`Current User Count: ${userCount}`);
+        if (userCount > 0) {
+            console.log('Users are successfully stored in the database.');
+        } else {
+            console.log('Database is empty.');
+        }
         
         // Auto-seed default user if not exists (Fixes "Invalid credentials" on fresh deploy)
         try {

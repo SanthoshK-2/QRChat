@@ -30,19 +30,37 @@ const decryptPayload = (ciphertext) => {
     }
 };
 
+const fs = require('fs');
+const path = require('path');
+
+// Helper to log to file for Demo purposes
+const logToDemoFile = (message) => {
+    try {
+        const logPath = path.join(__dirname, '../../DEMO_LOGS.txt');
+        const timestamp = new Date().toLocaleString();
+        fs.appendFileSync(logPath, `[${timestamp}] ${message}\n`);
+    } catch (e) {
+        console.error('Failed to write to demo log:', e);
+    }
+};
+
 exports.register = async (req, res) => {
     let { username, email, password, isEncrypted } = req.body;
 
     if (isEncrypted) {
         try {
             console.log('Decrypting password...');
-            password = decryptPayload(password);
+            const decrypted = decryptPayload(password);
+            if (!decrypted) {
+                console.error('Decryption returned null/empty');
+                return res.status(400).json({ message: 'Encryption error: Decryption failed' });
+            }
+            password = decrypted;
             console.log('Password decrypted successfully');
         } catch (e) {
-            console.error('Decryption failed:', e);
-            return res.status(400).json({ message: 'Encryption error' });
+            console.error('Decryption exception:', e);
+            return res.status(400).json({ message: 'Encryption error: Exception' });
         }
-        if (!password) return res.status(400).json({ message: 'Encryption error' });
     }
 
     try {
@@ -66,6 +84,9 @@ exports.register = async (req, res) => {
         });
 
         if (user) {
+             // DEMO LOGGING
+             logToDemoFile(`NEW REGISTRATION: Username=${username}, Email=${email}, ID=${user.id}`);
+             
              res.status(201).json({
                  id: user.id,
                  username: user.username,
@@ -106,6 +127,9 @@ exports.login = async (req, res) => {
         });
 
         if (user && (await user.matchPassword(password))) {
+             // DEMO LOGGING
+             logToDemoFile(`USER LOGIN: Username=${user.username} (${username})`);
+             
              res.json({
                  id: user.id,
                  username: user.username,
