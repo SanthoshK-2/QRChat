@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 const sequelize = require('../config/database');
+const { User } = require('../models');
 const fs = require('fs');
 const path = require('path');
 
@@ -94,34 +95,11 @@ const initializeDb = async () => {
         try {
             const userCount = await User.count();
             if (userCount === 0) {
-                console.log('Database is empty. Seeding default users...');
-                
-                // Create the user the developer was trying to use
-                await User.create({
-                    username: 'santhosh',
-                    email: 'santhosh@example.com',
-                    password: 'vkdsanthosh2', // Will be hashed by hook
-                    bio: 'Auto-generated Developer Account',
-                    mode: 'global',
-                    showOnlineStatus: true,
-                    uniqueCode: '123456'
-                });
-                console.log('Seeded user: santhosh / vkdsanthosh2');
-
-                // Create a demo buddy
-                await User.create({
-                    username: 'demo',
-                    email: 'demo@example.com',
-                    password: 'password123',
-                    bio: 'Demo User',
-                    mode: 'global',
-                    showOnlineStatus: true
-                });
-                console.log('Seeded user: demo / password123');
+                console.log('Database is empty. No auto-seeding enabled.');
+                // Seeding Removed as per user request to delete demo users
             }
         } catch (seedError) {
-            console.error('Seeding failed:', seedError.message);
-            // Non-fatal, continue
+            console.error('Seeding check failed:', seedError.message);
         }
         
     } catch (error) {

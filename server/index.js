@@ -16,6 +16,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const recoveryRoutes = require('./routes/recoveryRoutes');
 const callRoutes = require('./routes/callRoutes');
+const syncRoutes = require('./routes/syncRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -49,6 +50,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/recovery', recoveryRoutes);
 app.use('/api/calls', callRoutes);
+app.use('/api/sync', syncRoutes);
 
 const fs = require('fs');
 
