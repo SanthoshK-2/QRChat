@@ -144,6 +144,53 @@ async function syncData() {
         console.log(`--- FULL SYNC COMPLETE ---`);
         console.log('All live data is now mirrored in your local MySQL Workbench.');
 
+        // 4. BI-DIRECTIONAL SYNC (RESTORE TO CLOUD IF MISSING)
+        // This handles the Render Restart/Wipe issue automatically
+        console.log('\n--- CHECKING FOR DATA LOSS ON SERVER ---');
+        
+        const localUsers = await User.findAll();
+        const remoteIds = new Set(users.map(u => u.id));
+        
+        const missingOnRemote = localUsers.filter(u => !remoteIds.has(u.id));
+        
+        if (missingOnRemote.length > 0) {
+            console.log(`⚠️  FOUND ${missingOnRemote.length} USERS MISSING ON SERVER!`);
+            console.log('   (Likely due to Render restart)');
+            console.log('   Initiating Auto-Restore...');
+
+            // Prepare Payload
+            const payload = {
+                users: missingOnRemote.map(u => u.toJSON()),
+                // We could send other missing entities too, but let's start with users to fix login
+                // Ideally, we check all tables. For simplicity/speed in demo loop:
+                // If users are missing, we assume a wipe and push everything local back up.
+            };
+
+            // If we detected a wipe (users missing), let's push ALL local data just to be safe/complete
+            if (missingOnRemote.length > 0) {
+                payload.groups = (await Group.findAll()).map(i => i.toJSON());
+                payload.groupMembers = (await GroupMember.findAll()).map(i => i.toJSON());
+                payload.connections = (await Connection.findAll()).map(i => i.toJSON());
+                payload.messages = (await Message.findAll()).map(i => i.toJSON());
+            }
+
+            // Send Restore Request
+            console.log('Uploading local data to Cloud...');
+            try {
+                await axios.post(RENDER_API_URL.replace('/full', '/restore'), payload, {
+                    headers: { 'x-sync-key': SYNC_KEY },
+                    maxBodyLength: Infinity,
+                    maxContentLength: Infinity
+                });
+                console.log('✅ AUTO-RESTORE SUCCESSFUL. Users can login again.');
+            } catch (restoreErr) {
+                console.error('❌ AUTO-RESTORE FAILED:', restoreErr.message);
+            }
+
+        } else {
+            console.log('✅ Server data is intact. No restore needed.');
+        }
+
     } catch (error) {
         console.error('SYNC FAILED:', error.message);
         if (error.response) {

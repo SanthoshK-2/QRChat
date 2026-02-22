@@ -57,4 +57,45 @@ router.get('/users', syncAuth, async (req, res) => {
     }
 });
 
+// Endpoint for local script to PUSH data back to Render (Restore/Bi-directional Sync)
+router.post('/restore', syncAuth, async (req, res) => {
+    try {
+        const { users, messages, groups, groupMembers, connections } = req.body;
+        
+        console.log('--- RESTORE REQUEST RECEIVED ---');
+        
+        if (users && users.length > 0) {
+            console.log(`Restoring ${users.length} users...`);
+            await User.bulkCreate(users, { updateOnDuplicate: ['username', 'email', 'bio', 'mode', 'isOnline', 'lastSeen'] });
+        }
+
+        if (groups && groups.length > 0) {
+            console.log(`Restoring ${groups.length} groups...`);
+            await Group.bulkCreate(groups, { updateOnDuplicate: ['name', 'description', 'profilePic'] });
+        }
+
+        if (groupMembers && groupMembers.length > 0) {
+            console.log(`Restoring ${groupMembers.length} group members...`);
+            await GroupMember.bulkCreate(groupMembers, { ignoreDuplicates: true });
+        }
+
+        if (connections && connections.length > 0) {
+            console.log(`Restoring ${connections.length} connections...`);
+            await Connection.bulkCreate(connections, { updateOnDuplicate: ['status'] });
+        }
+
+        if (messages && messages.length > 0) {
+            console.log(`Restoring ${messages.length} messages...`);
+            await Message.bulkCreate(messages, { updateOnDuplicate: ['status', 'isRead', 'isEdited', 'deletedAt'] });
+        }
+
+        console.log('--- RESTORE COMPLETE ---');
+        res.json({ message: 'Data restored successfully' });
+
+    } catch (error) {
+        console.error('Restore Error:', error);
+        res.status(500).json({ message: 'Restore failed', error: error.message });
+    }
+});
+
 module.exports = router;

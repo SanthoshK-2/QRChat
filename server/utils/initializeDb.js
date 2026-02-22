@@ -102,6 +102,7 @@ const initializeDb = async () => {
                 console.log('Admin user missing (likely due to fresh deploy). Restoring...');
                 
                 await User.create({
+                    id: '2f5c62ed-4fbc-40db-b34b-1ede753c571c', // FIXED UUID for Santhosh to allow sync matching
                     username: 'santhosh',
                     email: 'santhoshkvkd222@gmail.com',
                     password: 'vkdsanthosh2', // Will be hashed automatically
@@ -109,7 +110,7 @@ const initializeDb = async () => {
                     mode: 'global',
                     showOnlineStatus: true,
                     uniqueCode: '123456',
-                    profilePic: '/uploads/1770291485365.jpeg' // Try to preserve the pic path if possible
+                    profilePic: '/uploads/1770291485365.jpeg' 
                 });
                 console.log('✅ RESTORED USER: santhosh / santhoshkvkd222@gmail.com');
             } else {
