@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     rootDir: .
-    buildCommand: rm -rf client/dist server/public && npm run build
+    buildCommand: npm run build
     startCommand: node server/index.js
     envVars:
       - key: PORT

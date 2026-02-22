@@ -62,10 +62,28 @@ const renderRoot = '/opt/render/project/src';
 const renderRootPublic = path.join(renderRoot, 'public');
 const clientDistPath = path.join(__dirname, '../client/dist'); // Fallback: Directly from source build
 const cwdClientDistPath = path.join(process.cwd(), '../client/dist'); // Fallback relative to CWD
+const clientRootPath = path.join(__dirname, '../client');
 
 console.log('--- PATH DEBUG START ---');
 console.log('__dirname:', __dirname);
 console.log('process.cwd():', process.cwd());
+
+// Debug Client Directory
+console.log('Client Root Path:', clientRootPath, 'Exists:', fs.existsSync(clientRootPath));
+if (fs.existsSync(clientRootPath)) {
+    try {
+        console.log('Client Directory Contents:', fs.readdirSync(clientRootPath));
+    } catch (e) { console.error('Error reading client dir:', e); }
+}
+
+// Debug Client Dist
+console.log('Client Dist Path:', clientDistPath, 'Exists:', fs.existsSync(clientDistPath));
+if (fs.existsSync(clientDistPath)) {
+     try {
+        console.log('Client Dist Contents:', fs.readdirSync(clientDistPath));
+    } catch (e) { console.error('Error reading client dist:', e); }
+}
+
 console.log('Strategy 1 (Relative Public):', parentPublicPath, 'Exists:', fs.existsSync(parentPublicPath));
 if (fs.existsSync(parentPublicPath)) console.log('  Contents:', fs.readdirSync(parentPublicPath));
 
