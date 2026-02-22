@@ -46,12 +46,14 @@ const localPublicPath = path.join(process.cwd(), 'server/public');
 const localPublicPathFallback = path.join(__dirname, 'public');
 const clientDistPath = path.join(__dirname, '../client/dist');
 const cwdClientDistPath = path.join(process.cwd(), 'client/dist');
+const parentPublicPath = path.join(__dirname, '../public'); // Robust relative path from server dir
 const renderServerPublic = path.join(renderRoot, 'server/public');
 const renderRootPublic = path.join(renderRoot, 'public');
 
 console.log('--- PATH DEBUG START ---');
 console.log('__dirname:', __dirname);
 console.log('process.cwd():', process.cwd());
+console.log('parentPublicPath:', parentPublicPath, 'Exists:', fs.existsSync(parentPublicPath));
 console.log('rootPublic:', rootPublic, 'Exists:', fs.existsSync(rootPublic));
 console.log('localPublicPath:', localPublicPath, 'Exists:', fs.existsSync(localPublicPath));
 console.log('renderServerPublic:', renderServerPublic, 'Exists:', fs.existsSync(renderServerPublic));
@@ -62,6 +64,10 @@ let finalBuildPath = null;
 // Strategy 0: Render Absolute Path (Highest Priority)
 if (fs.existsSync(path.join(renderRootPublic, 'index.html'))) {
     finalBuildPath = renderRootPublic;
+}
+// Strategy 0.5: Relative from server file (Robust)
+else if (fs.existsSync(path.join(parentPublicPath, 'index.html'))) {
+    finalBuildPath = parentPublicPath;
 }
 // Strategy 1: Check root 'public' (Simpler Move Strategy)
 else if (fs.existsSync(path.join(rootPublic, 'index.html'))) {
