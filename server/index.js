@@ -37,37 +37,44 @@ app.use('/api/calls', callRoutes);
 
 const fs = require('fs');
 
-// Priority: Check 'public' folder in current working directory (where server runs)
-// This matches the 'move strategy' where we copy dist to server/public
+// Extensive path resolution strategy
 const localPublicPath = path.join(process.cwd(), 'server/public');
 const localPublicPathFallback = path.join(__dirname, 'public');
+const clientDistPath = path.join(__dirname, '../client/dist');
+const cwdClientDistPath = path.join(process.cwd(), 'client/dist');
+
+console.log('--- PATH DEBUG START ---');
+console.log('__dirname:', __dirname);
+console.log('process.cwd():', process.cwd());
+console.log('localPublicPath:', localPublicPath, 'Exists:', fs.existsSync(localPublicPath));
+console.log('clientDistPath:', clientDistPath, 'Exists:', fs.existsSync(clientDistPath));
+console.log('--- PATH DEBUG END ---');
 
 let finalBuildPath = null;
 
+// Strategy 1: Check 'server/public' (Preferred - Copied artifacts)
 if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
     finalBuildPath = localPublicPath;
-} else if (fs.existsSync(path.join(localPublicPathFallback, 'index.html'))) {
+} 
+// Strategy 2: Check standard client dist relative to server file
+else if (fs.existsSync(path.join(clientDistPath, 'index.html'))) {
+    finalBuildPath = clientDistPath;
+}
+// Strategy 3: Check client dist relative to CWD
+else if (fs.existsSync(path.join(cwdClientDistPath, 'index.html'))) {
+    finalBuildPath = cwdClientDistPath;
+}
+// Strategy 4: Fallback to local 'public'
+else if (fs.existsSync(path.join(localPublicPathFallback, 'index.html'))) {
     finalBuildPath = localPublicPathFallback;
-} else {
-    // Fallback to searching relative paths if move failed
-    const possiblePaths = [
-        path.join(__dirname, '../client/dist'),
-        path.join(process.cwd(), 'client/dist'),
-        path.join(process.cwd(), 'public')
-    ];
-    for (const p of possiblePaths) {
-        if (fs.existsSync(path.join(p, 'index.html'))) {
-            finalBuildPath = p;
-            break;
-        }
-    }
 }
 
 if (!finalBuildPath) {
-    console.warn('WARNING: Could not find index.html. Defaulting to local public path for debug.');
+    console.error('CRITICAL: Could not find index.html in any expected location.');
+    // Default to a safe path to prevent crash, but 404 will show
     finalBuildPath = localPublicPath;
 } else {
-    console.log('Serving static files from:', finalBuildPath);
+    console.log('SUCCESS: Serving static files from:', finalBuildPath);
 }
 
 app.use(express.static(finalBuildPath, {
