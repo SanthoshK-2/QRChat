@@ -25,6 +25,7 @@ export default defineConfig({
     // Avoid manual global definition if using nodePolyfills with globals: true
     // global: 'globalThis', 
   },
+  base: '/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,

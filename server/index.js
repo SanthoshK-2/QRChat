@@ -80,41 +80,38 @@ else if (fs.existsSync(path.join(__dirname, '../client/dist/index.html'))) {
 
 if (!finalBuildPath) {
     console.error('CRITICAL: Could not find index.html in any expected location.');
-    
-    // Recursive search for index.html to find where it is hiding
-    let foundPath = null;
-    try {
-        const findFile = (dir) => {
-            if (foundPath) return;
-            const files = fs.readdirSync(dir);
-            for (const file of files) {
-                if (file === 'node_modules' || file === '.git') continue;
-                const fullPath = path.join(dir, file);
-                try {
-                    const stat = fs.statSync(fullPath);
-                    if (stat.isDirectory()) {
-                        findFile(fullPath);
-                    } else if (file === 'index.html') {
-                        foundPath = dir; // Found the directory containing index.html
-                        console.log('FOUND index.html at:', foundPath);
-                        return;
-                    }
-                } catch (e) {}
-            }
-        };
-        findFile(path.join(__dirname, '..')); // Search from root
-    } catch (e) { console.error('Search failed:', e); }
-
-    if (foundPath) {
-        finalBuildPath = foundPath;
-        console.log('Recovered using recursive search:', finalBuildPath);
-    } else {
-        // Absolute Hail Mary
-        finalBuildPath = path.join(__dirname, '../client/dist');
+    // REMOVED RECURSIVE SEARCH - IT WAS FINDING SOURCE CODE AND CAUSING CRASHES
+    // Default to Render absolute path as a hail mary
+    const renderPath = '/opt/render/project/src/client/dist';
+    if (fs.existsSync(path.join(renderPath, 'index.html'))) {
+        finalBuildPath = renderPath;
     }
 } else {
     console.log('SUCCESS: Serving static files from:', finalBuildPath);
+    // Safety Check: Ensure we aren't serving source code
+    try {
+        const indexContent = fs.readFileSync(path.join(finalBuildPath, 'index.html'), 'utf8');
+        if (indexContent.includes('src/main.jsx')) {
+            console.error('DANGER: Detected source HTML file! Refusing to serve.');
+            finalBuildPath = null;
+        }
+    } catch (e) { console.error('Error reading index.html:', e); }
 }
+
+// Serve static assets with correct MIME types
+app.use(express.static(finalBuildPath, {
+    setHeaders: (res, path) => {
+        if (path.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        } else if (path.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        } else if (path.endsWith('index.html')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+    }
+}));
 
 app.use(express.static(finalBuildPath, {
     setHeaders: (res, path) => {
