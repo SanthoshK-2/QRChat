@@ -10,6 +10,7 @@
     "build": "npm install --prefix server && npm install --prefix client && npm run build --prefix client && node scripts/deploy.js"
   },
   "dependencies": {
+    "axios": "^1.13.5",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.3.1",
     "mysql2": "^3.17.4",

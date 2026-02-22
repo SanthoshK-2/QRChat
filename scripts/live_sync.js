@@ -1,4 +1,5 @@
-require('dotenv').config({ path: '../server/.env' });
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../server/.env') });
 const axios = require('axios');
 const { Sequelize, DataTypes } = require('sequelize');
 
@@ -99,14 +100,36 @@ async function syncData() {
         const cloudData = response.data;
         
         // 2. SMART MERGE: Check if Local has more data than Cloud (Data Loss on Cloud)
+        // OR if Unique Codes mismatch (indicating Cloud re-seed vs Local persistence)
         const localUsers = await User.findAll();
         const localMessages = await Message.findAll();
         const localConnections = await Connection.findAll();
         
         console.log(`\n[STATUS] Cloud Users: ${cloudData.users.length} | Local Users: ${localUsers.length}`);
         
-        // If Cloud has significantly fewer users than Local (e.g. just the seed user), OR if local has messages but cloud has none
-        const cloudIsMissingData = (cloudData.users.length < localUsers.length) || 
+        let dataIntegrityIssue = false;
+        
+        // Check for count mismatch
+        if (cloudData.users.length < localUsers.length) {
+            console.log('[CHECK] User count mismatch: Cloud has fewer users.');
+            dataIntegrityIssue = true;
+        }
+
+        // Check for Unique Code mismatch (Critical for login/identity)
+        if (!dataIntegrityIssue && cloudData.users.length > 0) {
+            for (const localUser of localUsers) {
+                const cloudUser = cloudData.users.find(u => u.username === localUser.username);
+                if (cloudUser && cloudUser.uniqueCode !== localUser.uniqueCode) {
+                    console.log(`[CHECK] Mismatch detected for ${localUser.username}: Local(${localUser.uniqueCode}) vs Cloud(${cloudUser.uniqueCode})`);
+                    dataIntegrityIssue = true;
+                    break;
+                }
+                // Check if cloud user is missing password (if seeded without hash) or hash differs
+                // Note: Can't easily check hash equality without knowing plain text, but uniqueCode is a strong enough signal.
+            }
+        }
+
+        const cloudIsMissingData = dataIntegrityIssue || 
                                    (localMessages.length > 0 && cloudData.messages.length === 0) ||
                                    (localConnections.length > 0 && cloudData.connections.length === 0);
 

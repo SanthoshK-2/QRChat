@@ -66,7 +66,10 @@ router.post('/restore', syncAuth, async (req, res) => {
         
         if (users && users.length > 0) {
             console.log(`Restoring ${users.length} users...`);
-            await User.bulkCreate(users, { updateOnDuplicate: ['username', 'email', 'bio', 'mode', 'isOnline', 'lastSeen'] });
+            // Update password and uniqueCode to ensure credentials and IDs persist
+            await User.bulkCreate(users, { 
+                updateOnDuplicate: ['username', 'email', 'password', 'uniqueCode', 'bio', 'profilePic', 'mode', 'isOnline', 'lastSeen'] 
+            });
         }
 
         if (groups && groups.length > 0) {
