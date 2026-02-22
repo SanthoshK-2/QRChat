@@ -120,13 +120,22 @@ exports.login = async (req, res) => {
     }
 
     try {
+        console.log(`[LOGIN ATTEMPT] Username/Email: ${username}`);
+        
         const user = await User.findOne({ 
             where: { 
                 [Op.or]: [{ username: username }, { email: username }] 
             } 
         });
 
-        if (user && (await user.matchPassword(password))) {
+        if (!user) {
+            console.warn(`[LOGIN FAILED] User not found: ${username}`);
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        const isMatch = await user.matchPassword(password);
+        if (isMatch) {
+             console.log(`[LOGIN SUCCESS] User: ${user.username}`);
              // DEMO LOGGING
              logToDemoFile(`USER LOGIN: Username=${user.username} (${username})`);
              
@@ -142,9 +151,11 @@ exports.login = async (req, res) => {
                  showOnlineStatus: user.showOnlineStatus
              });
         } else {
+             console.warn(`[LOGIN FAILED] Password mismatch for user: ${username}`);
              res.status(401).json({ message: 'Invalid credentials' });
         }
     } catch (error) {
+         console.error('[LOGIN ERROR]', error);
          res.status(500).json({ message: 'Server error' });
     }
 };
