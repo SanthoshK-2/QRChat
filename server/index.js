@@ -57,46 +57,33 @@ const fs = require('fs');
 // /opt/render/project/src is likely the root
 const localPublicPath = path.join(__dirname, 'public'); // Standard Express Pattern
 
-console.log('--- PATH DEBUG START ---');
-console.log('__dirname:', __dirname);
-console.log('localPublicPath:', localPublicPath, 'Exists:', fs.existsSync(localPublicPath));
-if (fs.existsSync(localPublicPath)) {
-    try {
-        console.log('Server Public Contents:', fs.readdirSync(localPublicPath));
-    } catch (e) { console.error(e); }
-}
-console.log('--- PATH DEBUG END ---');
+// Simple and robust path selection
+let finalBuildPath = localPublicPath;
 
-let finalBuildPath = null;
-
-// Priority 1: Standard server/public (The new build strategy)
-if (fs.existsSync(path.join(localPublicPath, 'index.html'))) {
-    finalBuildPath = localPublicPath;
-}
-// Priority 2: Fallback to client/dist (Direct access)
-else if (fs.existsSync(path.join(__dirname, '../client/dist/index.html'))) {
-    finalBuildPath = path.join(__dirname, '../client/dist');
-}
-
-if (!finalBuildPath) {
-    console.error('CRITICAL: Could not find index.html in any expected location.');
-    // REMOVED RECURSIVE SEARCH - IT WAS FINDING SOURCE CODE AND CAUSING CRASHES
-    // Default to Render absolute path as a hail mary
-    const renderPath = '/opt/render/project/src/client/dist';
-    if (fs.existsSync(path.join(renderPath, 'index.html'))) {
-        finalBuildPath = renderPath;
+// Safety Check: If standard path doesn't exist, try fallback
+if (!fs.existsSync(path.join(finalBuildPath, 'index.html'))) {
+    console.warn(`Standard path ${finalBuildPath} missing index.html. Checking fallbacks...`);
+    const fallbackPath = path.join(__dirname, '../client/dist');
+    if (fs.existsSync(path.join(fallbackPath, 'index.html'))) {
+        finalBuildPath = fallbackPath;
+        console.log(`Using fallback path: ${finalBuildPath}`);
+    } else {
+        console.error('CRITICAL: Could not find index.html in any expected location.');
     }
 } else {
-    console.log('SUCCESS: Serving static files from:', finalBuildPath);
-    // Safety Check: Ensure we aren't serving source code
-    try {
+    console.log(`SUCCESS: Serving static files from: ${finalBuildPath}`);
+}
+
+// Safety Check: Ensure we aren't serving source code
+try {
+    if (finalBuildPath && fs.existsSync(path.join(finalBuildPath, 'index.html'))) {
         const indexContent = fs.readFileSync(path.join(finalBuildPath, 'index.html'), 'utf8');
         if (indexContent.includes('src/main.jsx')) {
             console.error('DANGER: Detected source HTML file! Refusing to serve.');
             finalBuildPath = null;
         }
-    } catch (e) { console.error('Error reading index.html:', e); }
-}
+    }
+} catch (e) { console.error('Error reading index.html:', e); }
 
 // Serve static assets with correct MIME types
 app.use(express.static(finalBuildPath, {
