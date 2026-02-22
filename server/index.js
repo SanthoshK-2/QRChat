@@ -113,15 +113,7 @@ app.use(express.static(finalBuildPath, {
     }
 }));
 
-app.use(express.static(finalBuildPath, {
-    setHeaders: (res, path) => {
-        if (path.endsWith('index.html')) {
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.setHeader('Pragma', 'no-cache');
-            res.setHeader('Expires', '0');
-        }
-    }
-}));
+// app.use(express.static(finalBuildPath, { ... })); // Removed duplicate block
 
 app.use((req, res) => {
     // Only handle GET requests for HTML/SPA
