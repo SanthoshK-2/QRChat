@@ -8,8 +8,9 @@ const crypto = require('crypto');
 const CryptoJS = require('crypto-js');
 
 // Ensure we have a secret key for decryption
-// Fallback to the known client key if env var is missing (fixes Render deployment issue)
-const APP_SECRET = process.env.APP_SECRET || "chate-secure-transport-key-2024";
+// CRITICAL: Hardcode to match client/src/config.js exactly to prevent ENV mismatches on Render
+// The client uses "chate-secure-transport-key-2024" directly.
+const APP_SECRET = "chate-secure-transport-key-2024";
 const JWT_SECRET = process.env.JWT_SECRET || "chate-jwt-secret-fallback-2024";
 
 const generateToken = (id) => {
@@ -89,8 +90,12 @@ exports.login = async (req, res) => {
     let { username, password, isEncrypted } = req.body;
     
     if (isEncrypted) {
-        password = decryptPayload(password);
-        if (!password) return res.status(400).json({ message: 'Encryption error' });
+        const decrypted = decryptPayload(password);
+        if (!decrypted) {
+             console.error('Login Decryption failed');
+             return res.status(400).json({ message: 'Encryption error: Login Decryption failed' });
+        }
+        password = decrypted;
     }
 
     try {
