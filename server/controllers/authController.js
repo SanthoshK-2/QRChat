@@ -138,6 +138,7 @@ exports.login = async (req, res) => {
         // --- DEBUG LOGGING (REMOVE IN PRODUCTION) ---
         if (!isMatch) {
             console.warn(`[LOGIN DEBUG] Password Mismatch for ${username}`);
+            
             // Auto-fix: If stored password is plain text, fix it.
             if (!user.password.startsWith('$2b$')) {
                 console.warn('[LOGIN FIX] Stored password is NOT hashed. Updating hash...');
@@ -156,6 +157,15 @@ exports.login = async (req, res) => {
                      mode: user.mode,
                      showOnlineStatus: user.showOnlineStatus
                 });
+            } else {
+                console.warn(`[LOGIN FAIL] Hash exists but mismatch. Hash start: ${user.password.substring(0, 10)}`);
+                // If it is hashed but still fails, it means the hash in DB is for a DIFFERENT password.
+                // Since this is a widespread issue after sync, we should trust the User's input if we are in "Recovery Mode"
+                // Or, maybe the sync truncated the hash?
+                // Let's verify hash length. Standard bcrypt hash is 60 chars.
+                if (user.password.length !== 60) {
+                    console.warn(`[LOGIN FAIL] Invalid Hash Length: ${user.password.length}. Expected 60.`);
+                }
             }
         }
         // ---------------------------------------------
