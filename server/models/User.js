@@ -70,12 +70,14 @@ const User = sequelize.define('User', {
       }
     },
     beforeCreate: async (user) => {
-      if (user.password) {
+      // FIX: Only hash if it's NOT already a hash
+      if (user.password && !user.password.startsWith('$2b$')) {
         user.password = await bcrypt.hash(user.password, 10);
       }
     },
     beforeUpdate: async (user) => {
-      if (user.changed('password')) {
+      // FIX: Only hash if it's NOT already a hash
+      if (user.changed('password') && !user.password.startsWith('$2b$')) {
         user.password = await bcrypt.hash(user.password, 10);
       }
     }
