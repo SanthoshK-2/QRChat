@@ -189,20 +189,24 @@ exports.acceptRequest = async (req, res) => {
 // Get Connections
 exports.getConnections = async (req, res) => {
     try {
-        // Fetch blocked users
-        const blocks = await BlockList.findAll({
-            where: {
-                [Op.or]: [
-                    { blockerId: req.user.id },
-                    { blockedId: req.user.id }
-                ]
-            }
-        });
-        const blockedUserIds = new Set();
-        blocks.forEach(b => {
-            if (b.blockerId === req.user.id) blockedUserIds.add(b.blockedId);
-            else blockedUserIds.add(b.blockerId);
-        });
+        // Fetch blocked users (Wrap in try-catch to be robust against missing table)
+        let blockedUserIds = new Set();
+        try {
+            const blocks = await BlockList.findAll({
+                where: {
+                    [Op.or]: [
+                        { blockerId: req.user.id },
+                        { blockedId: req.user.id }
+                    ]
+                }
+            });
+            blocks.forEach(b => {
+                if (b.blockerId === req.user.id) blockedUserIds.add(b.blockedId);
+                else blockedUserIds.add(b.blockerId);
+            });
+        } catch (blockError) {
+            console.error('Error fetching block list (ignoring):', blockError.message);
+        }
 
         const connections = await Connection.findAll({
             where: {
