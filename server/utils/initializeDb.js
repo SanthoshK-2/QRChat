@@ -114,7 +114,7 @@ const initializeDb = async () => {
                 });
                 console.log('✅ RESTORED USER: santhosh / santhoshkvkd222@gmail.com');
             } else {
-                console.log('Admin user already exists.');
+                console.log('Admin user already exists. Skipping auto-seed to prevent password overwrite.');
             }
         } catch (seedError) {
             console.error('Seeding check failed:', seedError.message);

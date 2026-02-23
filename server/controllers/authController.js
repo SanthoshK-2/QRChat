@@ -173,6 +173,16 @@ exports.login = async (req, res) => {
                 if (user.password.length !== 60) {
                     console.warn(`[LOGIN FAIL] Invalid Hash Length: ${user.password.length}. Expected 60.`);
                 }
+
+                // --- EMERGENCY RECOVERY (OPTIONAL) ---
+                // If this is 'santhosh' (Admin) or 'Kumar', and the password matches a known hardcoded fallback?
+                // NO, that's dangerous.
+                
+                // Return detailed error for debugging
+                return res.status(401).json({ 
+                    message: 'Invalid credentials', 
+                    debug: `Hash mismatch. Length: ${user.password.length}` 
+                });
             }
         }
         // ---------------------------------------------

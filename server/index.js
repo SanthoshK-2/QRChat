@@ -60,6 +60,9 @@ const localPublicPath = path.join(__dirname, 'public');
 console.log('--- PATH DEBUG START ---');
 console.log('__dirname:', __dirname);
 console.log('CWD:', process.cwd());
+// Log Secret Key partial (DEBUG ONLY)
+const appSecret = process.env.APP_SECRET || "chate-secure-transport-key-2024";
+console.log(`[DEBUG] APP_SECRET starts with: ${appSecret.substring(0, 5)}... ends with: ...${appSecret.substring(appSecret.length - 3)}`);
 
 // Robust Path Selection Strategy
 let finalBuildPath = null;
