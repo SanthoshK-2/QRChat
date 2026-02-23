@@ -181,7 +181,7 @@ exports.login = async (req, res) => {
                 // Return detailed error for debugging
                 return res.status(401).json({ 
                     message: 'Invalid credentials', 
-                    debug: `Hash mismatch. Length: ${user.password.length}` 
+                    debug: `Hash mismatch. Length: ${user.password.length}. Hash Start: ${user.password.substring(0, 5)}...` 
                 });
             }
         }
