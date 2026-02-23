@@ -134,4 +134,28 @@ router.post('/restore', syncAuth, async (req, res) => {
     }
 });
 
+// Force Password Update Endpoint (Bypasses hooks completely)
+router.post('/force-password', syncAuth, async (req, res) => {
+    try {
+        const { username, passwordHash } = req.body;
+        console.log(`[FORCE UPDATE] Setting password for ${username}`);
+        
+        // Direct SQL update to ensure no hooks interfere
+        // This sets the password column EXACTLY to the provided hash string
+        await User.update(
+            { password: passwordHash },
+            { 
+                where: { username: username }, 
+                hooks: false,
+                silent: true 
+            }
+        );
+        
+        res.json({ message: 'Password force updated' });
+    } catch (error) {
+        console.error('Force Update Error:', error);
+        res.status(500).json({ message: 'Force update failed' });
+    }
+});
+
 module.exports = router;

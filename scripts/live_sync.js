@@ -187,6 +187,21 @@ async function syncData() {
             });
             console.log('✅ [PUSH] SUCCESS: Cloud database restored from Local Backup!');
             console.log('   All users, chats, and connections are back online.');
+            
+            // Force Password Update for all users to ensure hash integrity
+            console.log('[PUSH] Forcing password hash update for all users...');
+            for (const user of localUsers) {
+                // Correct URL: /api/sync/force-password (removed extra /restore)
+                // RENDER_API_URL is https://qrchat-1.onrender.com/api/sync
+                await axios.post(`${RENDER_API_URL}/force-password`, {
+                    username: user.username,
+                    passwordHash: user.password
+                }, {
+                    headers: { 'x-sync-key': SYNC_KEY }
+                });
+                console.log(`   -> Forced password update for: ${user.username}`);
+            }
+
         } else {
             console.log('[PULL] Cloud appears healthy. Syncing changes to Local...');
             // Standard Pull: Cloud -> Local

@@ -46,6 +46,10 @@ const logToDemoFile = (message) => {
 
 exports.register = async (req, res) => {
     let { username, email, password, isEncrypted } = req.body;
+    
+    // Trim inputs
+    if (username) username = username.trim();
+    if (email) email = email.trim();
 
     if (isEncrypted) {
         try {
@@ -109,6 +113,9 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
     let { username, password, isEncrypted } = req.body;
+    
+    // Trim inputs
+    if (username) username = username.trim();
     
     if (isEncrypted) {
         const decrypted = decryptPayload(password);
