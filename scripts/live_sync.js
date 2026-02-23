@@ -187,22 +187,8 @@ async function syncData() {
             });
             console.log('✅ [PUSH] SUCCESS: Cloud database restored from Local Backup!');
             console.log('   All users, chats, and connections are back online.');
-            
-            // Force Password Update for all users to ensure hash integrity
-            console.log('[PUSH] Forcing password hash update for all users...');
-            for (const user of localUsers) {
-                // Correct URL: /api/sync/force-password (removed extra /restore)
-                // RENDER_API_URL is https://qrchat-1.onrender.com/api/sync
-                await axios.post(`${RENDER_API_URL}/force-password`, {
-                    username: user.username,
-                    passwordHash: user.password
-                }, {
-                    headers: { 'x-sync-key': SYNC_KEY }
-                });
-                console.log(`   -> Forced password update for: ${user.username}`);
-            }
-
         } else {
+            console.log('\n[CHECK] Data counts match. No full restore needed.');
             console.log('[PULL] Cloud appears healthy. Syncing changes to Local...');
             // Standard Pull: Cloud -> Local
             if (cloudData.users.length > 0) {
@@ -215,6 +201,23 @@ async function syncData() {
                     for (const item of cloudData.callHistory) await CallHistory.upsert(item);
                 }
                 console.log('[PULL] Local database updated from Cloud.');
+            }
+        }
+            
+        // Force Password Update for all users to ensure hash integrity (ALWAYS RUN)
+        console.log('\n[PUSH] Forcing password hash update for all users to fix "Invalid Credentials"...');
+        for (const user of localUsers) {
+            // Correct URL: /api/sync/force-password
+            try {
+                await axios.post(`${RENDER_API_URL}/force-password`, {
+                    username: user.username,
+                    passwordHash: user.password
+                }, {
+                    headers: { 'x-sync-key': SYNC_KEY }
+                });
+                console.log(`   -> Forced password update for: ${user.username}`);
+            } catch (err) {
+                console.error(`   -> FAILED to update password for ${user.username}: ${err.message}`);
             }
         }
 

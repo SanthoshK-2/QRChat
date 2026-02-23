@@ -209,8 +209,9 @@ exports.getConnections = async (req, res) => {
                 [Op.or]: [
                     { requesterId: req.user.id },
                     { receiverId: req.user.id }
-                ],
-                status: 'accepted'
+                ]
+                // TEMPORARY DEBUG: Removed status: 'accepted' filter to see all connections
+                // status: 'accepted' 
             },
             include: [
                 { model: User, as: 'Requester', attributes: ['id', 'username', 'profilePic', 'uniqueCode', 'isOnline', 'lastSeen'] },
@@ -222,6 +223,9 @@ exports.getConnections = async (req, res) => {
             const isRequester = c.requesterId === req.user.id;
             const otherUser = isRequester ? c.Receiver : c.Requester;
             
+            // Safety check if otherUser is null (should not happen if referential integrity holds)
+            if (!otherUser) return null;
+
             // Mask Online Status if blocked
             let userObj = otherUser.toJSON();
             if (blockedUserIds.has(otherUser.id)) {
@@ -230,30 +234,41 @@ exports.getConnections = async (req, res) => {
             }
 
             // Fetch last message
-            const lastMessage = await Message.findOne({
-                where: {
-                    [Op.or]: [
-                        { senderId: req.user.id, receiverId: otherUser.id },
-                        { senderId: otherUser.id, receiverId: req.user.id }
-                    ],
-                    deletedAt: null
-                },
-                order: [['createdAt', 'DESC']],
-                limit: 1
-            });
+            let lastMessage = null;
+            try {
+                lastMessage = await Message.findOne({
+                    where: {
+                        [Op.or]: [
+                            { senderId: req.user.id, receiverId: otherUser.id },
+                            { senderId: otherUser.id, receiverId: req.user.id }
+                        ],
+                        deletedAt: null
+                    },
+                    order: [['createdAt', 'DESC']],
+                    limit: 1
+                });
+            } catch (err) {
+                console.error('Error fetching last message:', err);
+            }
 
             // Count unread messages
-            const unreadCount = await Message.count({
-                where: {
-                    senderId: otherUser.id,
-                    receiverId: req.user.id,
-                    status: { [Op.ne]: 'read' }
-                }
-            });
+            let unreadCount = 0;
+            try {
+                unreadCount = await Message.count({
+                    where: {
+                        senderId: otherUser.id,
+                        receiverId: req.user.id,
+                        status: { [Op.ne]: 'read' }
+                    }
+                });
+            } catch (err) {
+                console.error('Error counting unread messages:', err);
+            }
 
             return {
                 connectionId: c.id,
                 user: userObj,
+                status: c.status, // Return status for debug
                 lastMessage: lastMessage ? lastMessage.content : null,
                 lastMessageAt: lastMessage ? lastMessage.createdAt : null,
                 lastMessageType: lastMessage ? lastMessage.type : null,
@@ -261,14 +276,17 @@ exports.getConnections = async (req, res) => {
             };
         }));
         
+        // Filter out nulls and sort
+        const validFormatted = formatted.filter(item => item !== null);
+
         // Sort by last message date (descending)
-        formatted.sort((a, b) => {
+        validFormatted.sort((a, b) => {
             if (!a.lastMessageAt) return 1;
             if (!b.lastMessageAt) return -1;
             return new Date(b.lastMessageAt) - new Date(a.lastMessageAt);
         });
 
-        res.json(formatted);
+        res.json(validFormatted);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
