@@ -18,9 +18,7 @@ cls
 echo ===================================================
 echo    SYNCING DATA... (%time%)
 echo ===================================================
-cd scripts
-call node live_sync.js
-cd ..
+call node scripts/live_sync.js
 echo.
 echo [INFO] Waiting 10 seconds before next sync...
 timeout /t 10

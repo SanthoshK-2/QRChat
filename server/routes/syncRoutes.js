@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { User, Message, Group, GroupMember, Connection, CallHistory } = require('../models');
 
+const sequelize = require('../config/database');
+
 // Secure middleware - simple protection for this sync endpoint
 const syncAuth = (req, res, next) => {
     const syncKey = req.headers['x-sync-key'];
@@ -12,6 +14,21 @@ const syncAuth = (req, res, next) => {
         res.status(403).json({ message: 'Unauthorized sync access' });
     }
 };
+
+// DIAGNOSTIC ENDPOINT
+router.get('/status', syncAuth, (req, res) => {
+    res.json({
+        dialect: sequelize.getDialect(),
+        db_name: sequelize.config.database,
+        host: sequelize.config.host,
+        is_fallback: sequelize.isFallback || false,
+        connection_error: sequelize.connectionError || null,
+        env_db_url_exists: !!process.env.DATABASE_URL,
+        env_db_url_valid: process.env.DATABASE_URL && 
+                         !process.env.DATABASE_URL.includes('hostname:port') &&
+                         !process.env.DATABASE_URL.includes('your-db-url')
+    });
+});
 
 // Endpoint for local script to fetch all data from Render DB
 router.get('/full', syncAuth, async (req, res) => {

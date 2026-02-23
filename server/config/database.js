@@ -75,11 +75,20 @@ sequelize.authenticate()
     .catch(err => {
         console.error('❌ Unable to connect to the database:', err);
         console.warn('⚠️  Falling back to Ephemeral SQLite due to connection failure.');
+        
+        // --- FALLBACK LOGIC ---
+        // Save error for API diagnosis
+        const connectionError = err.message;
+        
         sequelize = new Sequelize({
             dialect: 'sqlite',
             storage: './database.sqlite',
             logging: false
         });
+        
+        // Attach error to the NEW instance so we can read it later
+        sequelize.connectionError = connectionError;
+        sequelize.isFallback = true;
     });
 
 module.exports = sequelize;
