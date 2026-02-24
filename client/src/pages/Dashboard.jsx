@@ -260,6 +260,9 @@ const Dashboard = () => {
     fetchCallHistory();
 
     if (socket) {
+        // Ensure initial fetch happens when socket is ready or user changes
+        fetchChats();
+        
         const handleMessageUpdate = (message) => {
             setChats(prev => {
                 const otherUserId = message.senderId === user.id ? message.receiverId : message.senderId;

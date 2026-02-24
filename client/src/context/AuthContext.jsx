@@ -22,7 +22,12 @@ export const AuthProvider = ({ children }) => {
           const { data } = await api.get('/auth/profile');
           setUser(data);
         } catch (error) {
-          localStorage.removeItem('token');
+          console.error("Auth check failed:", error);
+          // Only clear token if it's strictly an auth error (401/403)
+          // to prevent logout on temporary network issues
+          if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+             localStorage.removeItem('token');
+          }
         }
       }
       setLoading(false);
@@ -31,10 +36,15 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (username, password) => {
-    const encryptedPassword = encryptPayload(password);
-    const { data } = await api.post('/auth/login', { username, password: encryptedPassword, isEncrypted: true });
-    localStorage.setItem('token', data.token);
-    setUser(data);
+    try {
+      const encryptedPassword = encryptPayload(password);
+      const { data } = await api.post('/auth/login', { username, password: encryptedPassword, isEncrypted: true });
+      localStorage.setItem('token', data.token);
+      setUser(data); // Immediate state update
+      return data;
+    } catch (error) {
+      throw error;
+    }
   };
 
   const register = async (username, password, email) => {

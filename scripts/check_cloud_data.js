@@ -18,7 +18,15 @@ async function checkCloudData() {
             });
             console.log('\n🔍 DIAGNOSTIC REPORT:');
             console.log('   Database Type:', statusRes.data.dialect);
-            console.log('   Using Fallback:', statusRes.data.is_fallback ? 'YES (Using SQLite)' : 'NO (Using Cloud DB)');
+            
+            if (statusRes.data.dialect === 'sqlite') {
+                console.log('   ❌ STATUS: USING TEMPORARY DATABASE (NOT AIVEN)');
+                console.log('   ⚠️  REASON: The server is NOT connected to the Cloud Database.');
+                console.log('   👉  ACTION REQUIRED: You must add DATABASE_URL in Render Environment Variables.');
+            } else {
+                console.log('   ✅ STATUS: CONNECTED TO CLOUD DATABASE (AIVEN)');
+            }
+
             if (statusRes.data.connection_error) {
                 console.log('   Connection Error:', statusRes.data.connection_error);
             }

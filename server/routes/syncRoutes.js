@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { User, Message, Group, GroupMember, Connection, CallHistory } = require('../models');
+const { User, Message, Group, GroupMember, Connection, CallHistory, BlockList, MuteList, Otp } = require('../models');
 
 const sequelize = require('../config/database');
 

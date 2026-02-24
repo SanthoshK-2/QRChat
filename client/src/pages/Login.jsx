@@ -1,9 +1,30 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import AuthContext from '../context/AuthContext';
 import { SERVER_URL } from '../config';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+
+// --- Styled Components ---
+const Toast = styled.div`
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: ${({ type }) => (type === 'error' ? '#ff4d4f' : '#52c41a')};
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+
+  @keyframes slideIn {
+    from { transform: translate(-50%, -20px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+  }
+`;
 
 const Container = styled.div`
   display: flex;
@@ -101,8 +122,21 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: '', color: '' });
-  const { login, register } = useContext(AuthContext);
+  const [toast, setToast] = useState(null); // { type: 'success'|'error', message: '' }
+  const { login, register, user } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  // Redirect if already logged in (prevents login page flash on refresh)
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const checkPasswordStrength = (pass) => {
     let score = 0;
@@ -144,26 +178,27 @@ const Login = () => {
     try {
       if (isLogin) {
         await login(username, password); 
-        alert("Login Successful");
-        navigate('/');
+        // Toast handled by useEffect on user state change or here
+        // No alert, just direct navigation
       } else {
         await register(username, password, email);
-        alert("Registration Successful. Please Login.");
+        showToast('success', "Registration Successful. Please Login.");
         setIsLogin(true); // Switch to Login mode
         setPassword(''); // Clear password for security
       }
     } catch (error) {
       console.error("Login Error:", error);
       if (error.message === 'Network Error') {
-          alert(`Network Error: Cannot connect to server at ${SERVER_URL}.\n\nPlease ensure:\n1. The server is running (npm start in server folder).\n2. Your device is on the same network.\n3. Firewall is not blocking the server port.`);
+          showToast('error', "Network Error: Cannot connect to server.");
       } else {
-          alert(error.response?.data?.message || error.message || 'An error occurred');
+          showToast('error', error.response?.data?.message || 'An error occurred');
       }
     }
   };
 
   return (
     <Container>
+      {toast && <Toast type={toast.type}>{toast.message}</Toast>}
       <Card>
         <Title>{isLogin ? 'Welcome Back' : 'Create Account'}</Title>
         <form onSubmit={handleSubmit}>
