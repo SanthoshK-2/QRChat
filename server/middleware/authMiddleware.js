@@ -10,7 +10,7 @@ const protect = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || "chate-jwt-secret-fallback-2024");
 
       req.user = await User.findByPk(decoded.id, {
         attributes: { exclude: ['password'] },
