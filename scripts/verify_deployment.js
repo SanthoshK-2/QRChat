@@ -32,6 +32,17 @@ async function verifyDeployment() {
             userId = loginRes.data.id;
             console.log('   ✅ Login SUCCESS');
             console.log('   ✅ Token Received');
+            
+            // DEBUG TOKEN
+            try {
+                // Try to resolve from server node_modules if root fails
+                const jwt = require('../server/node_modules/jsonwebtoken');
+                const decoded = jwt.verify(token, "chate-jwt-secret-fallback-2024");
+                console.log('   ✅ Token verified locally with fallback secret');
+            } catch (err) {
+                // Ignore local verification error if module not found
+            }
+
         } catch (e) {
             console.error('   ❌ Login FAILED:', e.response?.data?.message || e.message);
             return; // Cannot proceed without login
@@ -48,8 +59,9 @@ async function verifyDeployment() {
             if (connections.length > 0) {
                 console.log(`   ✅ Found ${connections.length} Connected Users:`);
                 connections.forEach(c => {
-                    const otherUser = c.requester.id === userId ? c.receiver : c.requester;
-                    console.log(`      - ${otherUser.username} (Status: ${c.status})`);
+                    // API returns formatted object: { user: {...}, status: ... }
+                    const username = c.user ? c.user.username : 'Unknown';
+                    console.log(`      - ${username} (Status: ${c.status})`);
                 });
             } else {
                 console.log('   ❌ No connections found! Chat list will be empty.');

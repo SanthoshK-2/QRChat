@@ -83,6 +83,19 @@ router.post('/restore', syncAuth, async (req, res) => {
         const { users, messages, groups, groupMembers, connections, callHistory } = req.body;
         
         console.log('--- RESTORE REQUEST RECEIVED ---');
+
+        if (req.body.delete_connections) {
+            const idsToDelete = req.body.delete_connections;
+            if (Array.isArray(idsToDelete) && idsToDelete.length > 0) {
+                console.log(`[CLEANUP] Deleting ${idsToDelete.length} duplicate connections...`);
+                await Connection.destroy({
+                    where: {
+                        id: idsToDelete
+                    }
+                });
+                console.log('[CLEANUP] Success.');
+            }
+        }
         
         if (users && users.length > 0) {
             console.log(`Restoring ${users.length} users...`);
