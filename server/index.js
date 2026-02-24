@@ -372,8 +372,11 @@ io.on('connection', (socket) => {
       io.to(data.to).emit('ice_candidate', data.candidate);
   });
   
-  socket.on('end_call', (data) => {
-      io.to(data.to).emit('end_call');
+  socket.on('end_call', async (data) => {
+      const { to, duration } = data;
+      io.to(to).emit('call_ended');
+      // Also notify the caller (self) to update history
+      socket.emit('call_ended');
   });
 
   socket.on('disconnect', async () => {

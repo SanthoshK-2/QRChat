@@ -56,17 +56,16 @@ async function cleanupDuplicateConnections() {
         }
 
         // 3. Delete Duplicates
-        // Since we don't have a bulk delete endpoint exposed for arbitrary IDs in syncRoutes,
-        // we will use a TRICK:
-        // We will PUSH the "validConnections" back to the server using /restore endpoint 
-        // BUT the /restore endpoint usually ADDS. It doesn't replace.
-        // 
-        // So we actually need to ADD a cleanup endpoint to the server code FIRST.
-        // We cannot delete from client side without a delete route.
+        console.log(`\nSending cleanup request for ${duplicates.length} IDs...`);
         
-        console.log('⚠️  Cannot delete directly from script without backend support.');
-        console.log('   Please deploy the backend update first (which I will do next).');
-        console.log('   IDs to delete:', duplicates.slice(0, 5), '...');
+        await axios.post(`${RENDER_API_URL}/restore`, {
+            delete_connections: duplicates
+        }, {
+            headers: { 'x-sync-key': SYNC_KEY }
+        });
+
+        console.log('✅ CLEANUP COMPLETE. Duplicates removed.');
+        console.log('   The Chat list should now show unique users only.');
 
     } catch (error) {
         console.error('\n❌ ERROR:', error.message);

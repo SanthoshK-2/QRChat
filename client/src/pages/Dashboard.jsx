@@ -295,12 +295,18 @@ const Dashboard = () => {
             });
         };
 
+        const handleCallUpdate = () => {
+            fetchCallHistory();
+        };
+
         socket.on('receive_message', handleMessageUpdate);
         socket.on('message_sent', handleMessageUpdate);
+        socket.on('call_ended', handleCallUpdate); // Listen for call end to update history
 
         return () => {
             socket.off('receive_message', handleMessageUpdate);
             socket.off('message_sent', handleMessageUpdate);
+            socket.off('call_ended', handleCallUpdate);
         };
     }
   }, [user, socket]); // Add user dependency for decrypt logic if needed
