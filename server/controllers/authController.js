@@ -140,7 +140,47 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const isMatch = await user.matchPassword(password);
+        // Guard against null/invalid stored password values from older records
+        if (!user.password || typeof user.password !== 'string') {
+            console.warn('[LOGIN FIX] Stored password is empty/invalid. Replacing with new hash.');
+            user.password = password; // will be hashed by hook
+            await user.save();
+            return res.json({
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                token: generateToken(user.id),
+                uniqueCode: user.uniqueCode,
+                profilePic: user.profilePic,
+                bio: user.bio,
+                mode: user.mode,
+                showOnlineStatus: user.showOnlineStatus
+            });
+        }
+
+        let isMatch;
+        try {
+            isMatch = await user.matchPassword(password);
+        } catch (cmpErr) {
+            console.warn('[LOGIN WARN] bcrypt compare failed, attempting auto-repair:', cmpErr.message);
+            // Attempt auto-repair for malformed hash
+            if (!user.password.startsWith('$2b$') || user.password.length !== 60) {
+                user.password = password;
+                await user.save();
+                return res.json({
+                    id: user.id,
+                    username: user.username,
+                    email: user.email,
+                    token: generateToken(user.id),
+                    uniqueCode: user.uniqueCode,
+                    profilePic: user.profilePic,
+                    bio: user.bio,
+                    mode: user.mode,
+                    showOnlineStatus: user.showOnlineStatus
+                });
+            }
+            throw cmpErr;
+        }
         
         // --- DEBUG LOGGING (REMOVE IN PRODUCTION) ---
         if (!isMatch) {
@@ -209,7 +249,8 @@ exports.login = async (req, res) => {
         }
     } catch (error) {
          console.error('[LOGIN ERROR]', error);
-         res.status(500).json({ message: 'Server error' });
+         // Return safe details to aid diagnosis without exposing secrets
+         res.status(500).json({ message: 'Server error', code: 'AUTH_LOGIN_500' });
     }
 };
 
