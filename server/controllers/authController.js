@@ -400,9 +400,11 @@ exports.forgotPassword = async (req, res) => {
         user.resetPasswordExpires = otpExpires;
         await user.save();
 
-        // Setup Nodemailer
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            return res.json({ message: 'OTP generated; email not configured' });
+        }
         const transporter = nodemailer.createTransport({
-            service: 'gmail', // Assuming Gmail as requested
+            service: 'gmail',
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS

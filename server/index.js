@@ -43,6 +43,22 @@ app.get('/health', (req, res) => {
     });
 });
 
+app.get('/api/diag', async (req, res) => {
+    try {
+        await sequelize.authenticate();
+        const qi = sequelize.getQueryInterface();
+        const tables = await qi.showAllTables();
+        res.json({
+            db: {
+                dialect: sequelize.getDialect()
+            },
+            tables
+        });
+    } catch (e) {
+        res.status(500).json({ message: 'diag failed', error: e.message });
+    }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/connections', connectionRoutes);

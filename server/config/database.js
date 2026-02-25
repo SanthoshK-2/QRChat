@@ -17,15 +17,17 @@ const isValidDbUrl = process.env.DATABASE_URL &&
                      !process.env.DATABASE_URL.includes('your-db-url');
 
 if (isValidDbUrl) {
+    const rawUrl = process.env.DATABASE_URL;
+    const normalizedUrl = rawUrl.replace(/^mysqls:\/\//i, 'mysql://');
     console.log('✅ Using CLOUD DATABASE (MySQL/PostgreSQL) from DATABASE_URL.');
     console.log('   Data will persist even if laptop is off.');
-    sequelize = new Sequelize(process.env.DATABASE_URL, {
-        dialect: process.env.DATABASE_URL.startsWith('postgres') ? 'postgres' : 'mysql',
+    sequelize = new Sequelize(normalizedUrl, {
+        dialect: normalizedUrl.startsWith('postgres') ? 'postgres' : 'mysql',
         logging: false,
         dialectOptions: {
             ssl: {
                 require: true,
-                rejectUnauthorized: false // Often needed for free tier cloud DBs
+                rejectUnauthorized: false
             }
         },
         pool: { max: 5, min: 0, acquire: 30000, idle: 10000 }
