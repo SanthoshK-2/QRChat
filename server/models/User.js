@@ -54,6 +54,10 @@ const User = sequelize.define('User', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+  isAdmin: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
   resetPasswordOTP: {
     type: DataTypes.STRING,
     allowNull: true

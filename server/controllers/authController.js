@@ -232,7 +232,7 @@ exports.login = async (req, res) => {
              // DEMO LOGGING
              logToDemoFile(`USER LOGIN: Username=${user.username} (${username})`);
              
-             res.json({
+            res.json({
                  id: user.id,
                  username: user.username,
                  email: user.email,
@@ -241,7 +241,8 @@ exports.login = async (req, res) => {
                  profilePic: user.profilePic,
                  bio: user.bio,
                  mode: user.mode,
-                 showOnlineStatus: user.showOnlineStatus
+                showOnlineStatus: user.showOnlineStatus,
+                isAdmin: user.isAdmin || false
              });
         } else {
              console.warn(`[LOGIN FAILED] Password mismatch for user: ${username}`);
@@ -265,7 +266,8 @@ exports.getProfile = async (req, res) => {
              profilePic: user.profilePic,
              bio: user.bio,
              mode: user.mode,
-             showOnlineStatus: user.showOnlineStatus
+             showOnlineStatus: user.showOnlineStatus,
+             isAdmin: user.isAdmin || false
          });
     } else {
          res.status(404).json({ message: 'User not found' });

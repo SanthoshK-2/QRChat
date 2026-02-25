@@ -1,4 +1,4 @@
-const sequelize = require('../config/database');
+const { sequelize } = require('./User'); // pulls configured instance
 const User = require('./User');
 const Connection = require('./Connection');
 const Message = require('./Message');
@@ -8,6 +8,7 @@ const BlockList = require('./BlockList');
 const MuteList = require('./MuteList');
 const Otp = require('./Otp');
 const CallHistory = require('./CallHistory');
+const UsageSession = require('./UsageSession');
 
 // User <-> Connection
 User.hasMany(Connection, { foreignKey: 'requesterId', as: 'SentRequests' });
@@ -42,6 +43,10 @@ User.hasMany(CallHistory, { foreignKey: 'receiverId', as: 'CallsReceived' });
 CallHistory.belongsTo(User, { foreignKey: 'callerId', as: 'Caller' });
 CallHistory.belongsTo(User, { foreignKey: 'receiverId', as: 'Receiver' });
 
+// Usage Sessions
+User.hasMany(UsageSession, { foreignKey: 'userId', as: 'UsageSessions' });
+UsageSession.belongsTo(User, { foreignKey: 'userId', as: 'User' });
+
 module.exports = {
   sequelize,
   User,
@@ -52,5 +57,6 @@ module.exports = {
   BlockList,
   MuteList,
   Otp,
-  CallHistory
+  CallHistory,
+  UsageSession
 };

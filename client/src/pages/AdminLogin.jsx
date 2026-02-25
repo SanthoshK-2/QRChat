@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import api from '../utils/api';
 
 const Container = styled.div`
   display: flex;
@@ -56,13 +57,26 @@ const AdminLogin = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    // Hardcoded for "Me" only as requested
-    if (username === 'admin' && password === 'admin123') {
+  const handleLogin = async () => {
+    try {
+      setError('');
+      const res = await api.post('/auth/login', {
+        username,
+        password,
+        isEncrypted: false
+      });
+      const { token, isAdmin } = res.data || {};
+      if (!isAdmin) {
+        setError('Admin access required');
+        return;
+      }
+      if (token) {
+        localStorage.setItem('token', token);
+      }
       localStorage.setItem('admin_auth', 'true');
       navigate('/admin/dashboard');
-    } else {
-      setError('Invalid Credentials');
+    } catch (e) {
+      setError(e.response?.data?.message || 'Login failed');
     }
   };
 

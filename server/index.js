@@ -19,6 +19,7 @@ const groupRoutes = require('./routes/groupRoutes');
 const recoveryRoutes = require('./routes/recoveryRoutes');
 const callRoutes = require('./routes/callRoutes');
 const syncRoutes = require('./routes/syncRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -96,6 +97,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/recovery', recoveryRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/admin', adminRoutes);
 
 const fs = require('fs');
 
@@ -213,6 +215,7 @@ const io = new Server(server, {
 app.set('io', io);
 
 const onlineUsers = new Map(); 
+const activeSessions = new Map(); // userId -> UsageSession id
 
 const broadcastStatus = async (userId, isOnline) => {
     try {
@@ -260,10 +263,17 @@ io.on('connection', (socket) => {
                 await broadcastStatus(userId, true);
             }
 
+        // Start usage session if none active
+        if (!activeSessions.has(userId)) {
+            const { UsageSession } = require('./models');
+            const session = await UsageSession.create({ userId, startedAt: new Date() });
+            activeSessions.set(userId, session.id);
+        }
             // Sync: Deliver all pending messages for this user
             const pendingMessages = await Message.findAll({
                 where: {
                     receiverId: userId,
+                    status: 'sent'
                     status: 'sent'
                 }
             });
@@ -444,6 +454,20 @@ io.on('connection', (socket) => {
                     // Selective broadcast
                     await broadcastStatus(userId, false);
                 }
+            }
+            // Close usage session if active
+            if (activeSessions.has(userId)) {
+                const { UsageSession } = require('./models');
+                const id = activeSessions.get(userId);
+                const session = await UsageSession.findByPk(id);
+                if (session && !session.endedAt) {
+                    const end = new Date();
+                    const duration = Math.max(0, Math.floor((end - session.startedAt) / 1000));
+                    session.endedAt = end;
+                    session.durationSeconds = duration;
+                    await session.save();
+                }
+                activeSessions.delete(userId);
             }
         } catch (e) {
             console.error(e);

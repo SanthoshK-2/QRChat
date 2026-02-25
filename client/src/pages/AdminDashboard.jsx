@@ -54,6 +54,8 @@ const Button = styled.button`
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  const [usage, setUsage] = useState([]);
+  const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -64,18 +66,25 @@ const AdminDashboard = () => {
       return;
     }
 
-    fetchUsers();
+    fetchData();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     try {
         setLoading(true);
-        const res = await api.get('/auth/all-users');
-        setUsers(res.data);
+        // Users list (existing endpoint)
+        const [uRes, usageRes, callsRes] = await Promise.all([
+          api.get('/auth/all-users'),
+          api.get('/admin/usage/users'),
+          api.get('/admin/usage/calls')
+        ]);
+        setUsers(uRes.data);
+        setUsage(usageRes.data || []);
+        setCalls(callsRes.data || []);
         setLoading(false);
     } catch (e) {
         console.error(e);
-        setError("Failed to load users");
+        setError("Failed to load admin data");
         setLoading(false);
     }
   };
@@ -131,6 +140,70 @@ const AdminDashboard = () => {
                 <tr>
                     <Td colSpan="4" style={{textAlign: 'center'}}>No users found</Td>
                 </tr>
+            )}
+          </tbody>
+        </Table>
+      </div>
+
+      <h2 style={{ marginTop: '2rem' }}>Usage (Hours by User)</h2>
+      <div style={{ overflowX: 'auto' }}>
+        <Table>
+          <thead>
+            <tr>
+              <Th>User</Th>
+              <Th>Total Hours</Th>
+              <Th>Sessions</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {usage.map(row => {
+              const seconds = parseInt(row.dataValues?.totalSeconds || row.totalSeconds || 0, 10);
+              const hours = (seconds / 3600).toFixed(2);
+              const sessions = parseInt(row.dataValues?.sessions || row.sessions || 0, 10);
+              const u = row.User || row.user || {};
+              return (
+                <tr key={row.userId || (u && u.id)}>
+                  <Td>{u.username} ({u.email})</Td>
+                  <Td>{hours}</Td>
+                  <Td>{sessions}</Td>
+                </tr>
+              );
+            })}
+            {usage.length === 0 && (
+              <tr><Td colSpan="3" style={{ textAlign: 'center' }}>No usage recorded</Td></tr>
+            )}
+          </tbody>
+        </Table>
+      </div>
+
+      <h2 style={{ marginTop: '2rem' }}>Call Durations (per Caller)</h2>
+      <div style={{ overflowX: 'auto' }}>
+        <Table>
+          <thead>
+            <tr>
+              <Th>Caller</Th>
+              <Th>Audio Hours</Th>
+              <Th>Video Hours</Th>
+              <Th>Total Calls</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {calls.map(row => {
+              const audioSec = parseInt(row.dataValues?.audioSeconds || row.audioSeconds || 0, 10);
+              const videoSec = parseInt(row.dataValues?.videoSeconds || row.videoSeconds || 0, 10);
+              const totalCalls = parseInt(row.dataValues?.totalCalls || row.totalCalls || 0, 10);
+              const caller = row.Caller || row.caller || {};
+              return (
+                <tr key={row.callerId || (caller && caller.id)}>
+                  <Td>{caller.username} ({caller.email})</Td>
+                  <Td>{(audioSec/3600).toFixed(2)}</Td>
+                  <Td>{(videoSec/3600).toFixed(2)}</Td>
+                  <Td>{totalCalls}</Td>
+                </tr>
+              );
+            })}
+            {calls.length === 0 && (
+              <tr><Td colSpan="4" style={{ textAlign: 'center' }}>No call history</Td></tr>
             )}
           </tbody>
         </Table>

@@ -110,11 +110,19 @@ const initializeDb = async () => {
                     mode: 'global',
                     showOnlineStatus: true,
                     uniqueCode: '123456',
-                    profilePic: '/uploads/1770291485365.jpeg' 
+                    profilePic: '/uploads/1770291485365.jpeg',
+                    isAdmin: true
                 });
                 console.log('✅ RESTORED USER: santhosh / santhoshkvkd222@gmail.com');
             } else {
-                console.log('Admin user already exists. Skipping auto-seed to prevent password overwrite.');
+                // Ensure isAdmin is true without overwriting other fields
+                if (!adminUser.isAdmin) {
+                    adminUser.isAdmin = true;
+                    await adminUser.save();
+                    console.log('✅ Updated existing admin user with isAdmin=true');
+                } else {
+                    console.log('Admin user already exists. Skipping auto-seed to prevent password overwrite.');
+                }
             }
         } catch (seedError) {
             console.error('Seeding check failed:', seedError.message);
