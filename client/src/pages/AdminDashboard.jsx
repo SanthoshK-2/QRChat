@@ -56,6 +56,10 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [usage, setUsage] = useState([]);
   const [calls, setCalls] = useState([]);
+  const [online, setOnline] = useState(0);
+  const [range, setRange] = useState('week'); // day | week | month | custom
+  const [start, setStart] = useState('');
+  const [end, setEnd] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -72,21 +76,62 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     try {
         setLoading(true);
-        // Users list (existing endpoint)
-        const [uRes, usageRes, callsRes] = await Promise.all([
+        const q = new URLSearchParams();
+        if (range) q.set('range', range);
+        if (range === 'custom' && start && end) {
+          q.set('start', start);
+          q.set('end', end);
+        }
+        const [uRes, usageRes, callsRes, onlineRes] = await Promise.all([
           api.get('/auth/all-users'),
-          api.get('/admin/usage/users'),
-          api.get('/admin/usage/calls')
+          api.get('/admin/usage/users?' + q.toString()),
+          api.get('/admin/usage/calls?' + q.toString()),
+          api.get('/admin/online')
         ]);
         setUsers(uRes.data);
         setUsage(usageRes.data || []);
         setCalls(callsRes.data || []);
+        setOnline(onlineRes.data?.online || 0);
         setLoading(false);
     } catch (e) {
         console.error(e);
         setError("Failed to load admin data");
         setLoading(false);
     }
+  };
+
+  const exportUsage = async () => {
+    const q = new URLSearchParams();
+    if (range) q.set('range', range);
+    if (range === 'custom' && start && end) {
+      q.set('start', start);
+      q.set('end', end);
+    }
+    const res = await api.get('/admin/export/usage.csv?' + q.toString(), { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'usage.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  const exportCalls = async () => {
+    const q = new URLSearchParams();
+    if (range) q.set('range', range);
+    if (range === 'custom' && start && end) {
+      q.set('start', start);
+      q.set('end', end);
+    }
+    const res = await api.get('/admin/export/calls.csv?' + q.toString(), { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'calls.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   const deleteUser = async (id) => {
@@ -112,8 +157,23 @@ const AdminDashboard = () => {
     <Container>
       <Header>
         <h1>Admin Dashboard</h1>
-        <Button onClick={logout} style={{ background: '#333' }}>Logout</Button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <span>Online now: <strong>{online}</strong></span>
+          <Button onClick={logout} style={{ background: '#333' }}>Logout</Button>
+        </div>
       </Header>
+      
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <Button onClick={() => { setRange('day'); fetchData(); }} style={{ background: range==='day' ? '#1890ff' : '#555' }}>24 Hours</Button>
+        <Button onClick={() => { setRange('week'); fetchData(); }} style={{ background: range==='week' ? '#1890ff' : '#555' }}>7 Days</Button>
+        <Button onClick={() => { setRange('month'); fetchData(); }} style={{ background: range==='month' ? '#1890ff' : '#555' }}>30 Days</Button>
+        <span>Custom:</span>
+        <input type="date" value={start} onChange={e => setStart(e.target.value)} />
+        <input type="date" value={end} onChange={e => setEnd(e.target.value)} />
+        <Button onClick={() => { setRange('custom'); fetchData(); }} style={{ background: range==='custom' ? '#1890ff' : '#555' }}>Apply</Button>
+        <Button onClick={exportUsage} style={{ background: '#16a34a' }}>Export Usage CSV</Button>
+        <Button onClick={exportCalls} style={{ background: '#16a34a' }}>Export Calls CSV</Button>
+      </div>
       
       <div style={{ overflowX: 'auto' }}>
         <Table>

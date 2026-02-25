@@ -13,5 +13,8 @@ const adminOnly = (req, res, next) => {
 router.get('/usage/users', protect, adminOnly, adminController.getUsageByUser);
 router.get('/usage/calls', protect, adminOnly, adminController.getCallDurations);
 router.get('/users/:userId', protect, adminOnly, adminController.getUserDetail);
+router.get('/export/usage.csv', protect, adminOnly, adminController.exportUsageCsv);
+router.get('/export/calls.csv', protect, adminOnly, adminController.exportCallsCsv);
+router.get('/online', protect, adminOnly, adminController.getOnline);
 
 module.exports = router;

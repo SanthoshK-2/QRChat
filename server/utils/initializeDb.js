@@ -103,7 +103,7 @@ const initializeDb = async () => {
                 
                 await User.create({
                     id: '2f5c62ed-4fbc-40db-b34b-1ede753c571c', // FIX: Keep original ID
-                    username: 'santhosh',
+                    username: 'Santhosh@2006',
                     email: 'santhoshkvkd222@gmail.com',
                     password: 'vkdsanthosh2', // Will be hashed automatically
                     bio: 'God Bless yoU',
@@ -116,13 +116,21 @@ const initializeDb = async () => {
                 console.log('✅ RESTORED USER: santhosh / santhoshkvkd222@gmail.com');
             } else {
                 // Ensure isAdmin is true without overwriting other fields
+                let changed = false;
                 if (!adminUser.isAdmin) {
                     adminUser.isAdmin = true;
+                    changed = true;
+                }
+                if (adminUser.username !== 'Santhosh@2006') {
+                    adminUser.username = 'Santhosh@2006';
+                    changed = true;
+                }
+                if (changed) {
                     await adminUser.save();
-                    console.log('✅ Updated existing admin user with isAdmin=true');
+                    console.log('✅ Updated existing admin user (isAdmin/username)');
                 } else {
                     console.log('Admin user already exists. Skipping auto-seed to prevent password overwrite.');
-                }
+                }                
             }
         } catch (seedError) {
             console.error('Seeding check failed:', seedError.message);
