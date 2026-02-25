@@ -3,6 +3,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const sequelize = require('./config/database');
@@ -21,11 +23,38 @@ const syncRoutes = require('./routes/syncRoutes');
 const app = express();
 const server = http.createServer(app);
 
-app.use(cors({
-    origin: "*",
-    methods: ["GET", "POST"]
+const allowList = (() => {
+    const envList = (process.env.ALLOWED_ORIGINS || '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+    const defaults = ['https://qrchat-1.onrender.com'];
+    return [...new Set([...envList, ...defaults])];
+})();
+const corsOptions = {
+    origin: (origin, cb) => {
+        if (!origin) return cb(null, true);
+        const ok = allowList.some(a => origin === a);
+        cb(ok ? null : new Error('Not allowed by CORS'), ok);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: false
+};
+app.use(cors(process.env.NODE_ENV === 'production' ? corsOptions : { origin: '*', methods: ['GET','POST','PUT','DELETE','OPTIONS'] }));
+
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
-app.use(express.json());
+
+app.use(express.json({ limit: '1mb' }));
+
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 50, standardHeaders: true, legacyHeaders: false });
+const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 1000, standardHeaders: true, legacyHeaders: false });
+
+app.use('/api', generalLimiter);
+app.use('/api/auth', authLimiter);
+app.use('/api/recovery', authLimiter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health Check Route
@@ -73,12 +102,13 @@ const fs = require('fs');
 // Standard Express Pattern: server/public is the only place we care about now
 const localPublicPath = path.join(__dirname, 'public'); 
 
-console.log('--- PATH DEBUG START ---');
-console.log('__dirname:', __dirname);
-console.log('CWD:', process.cwd());
-// Log Secret Key partial (DEBUG ONLY)
-const appSecret = process.env.APP_SECRET || "chate-secure-transport-key-2024";
-console.log(`[DEBUG] APP_SECRET starts with: ${appSecret.substring(0, 5)}... ends with: ...${appSecret.substring(appSecret.length - 3)}`);
+if (process.env.NODE_ENV !== 'production') {
+    console.log('--- PATH DEBUG START ---');
+    console.log('__dirname:', __dirname);
+    console.log('CWD:', process.cwd());
+    const appSecret = process.env.APP_SECRET || "chate-secure-transport-key-2024";
+    console.log(`[DEBUG] APP_SECRET starts with: ${appSecret.substring(0, 5)}... ends with: ...${appSecret.substring(appSecret.length - 3)}`);
+}
 
 // Robust Path Selection Strategy
 let finalBuildPath = null;
@@ -92,9 +122,9 @@ const possiblePaths = [
 ];
 
 for (const p of possiblePaths) {
-    console.log(`Checking path: ${p}`);
+    if (process.env.NODE_ENV !== 'production') console.log(`Checking path: ${p}`);
     if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
-        console.log(`FOUND VALID FRONTEND AT: ${p}`);
+        if (process.env.NODE_ENV !== 'production') console.log(`FOUND VALID FRONTEND AT: ${p}`);
         finalBuildPath = p;
         break;
     }
@@ -105,10 +135,10 @@ if (!finalBuildPath) {
     // Default to localPublicPath so we at least have a path to show 404 for
     finalBuildPath = localPublicPath;
 } else {
-    console.log(`SUCCESS: Serving static files from: ${finalBuildPath}`);
+    if (process.env.NODE_ENV !== 'production') console.log(`SUCCESS: Serving static files from: ${finalBuildPath}`);
 }
 
-console.log('--- PATH DEBUG END ---');
+if (process.env.NODE_ENV !== 'production') console.log('--- PATH DEBUG END ---');
 
 // Safety Check: Ensure we aren't serving source code
 try {

@@ -14,7 +14,19 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage });
+const upload = multer({ 
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const ok = (
+            file.mimetype.startsWith('image/') ||
+            file.mimetype.startsWith('audio/') ||
+            file.mimetype.startsWith('video/') ||
+            file.mimetype === 'application/pdf'
+        );
+        cb(ok ? null : new Error('Invalid file type'), ok);
+    }
+});
 
 router.get('/:otherUserId', protect, chatController.getMessages);
 router.get('/group/:groupId', protect, chatController.getGroupMessages);
