@@ -60,6 +60,7 @@ const AdminDashboard = () => {
   const [range, setRange] = useState('week'); // day | week | month | custom
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
+  const [detail, setDetail] = useState(null); // { user, usage, calls }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -100,6 +101,16 @@ const AdminDashboard = () => {
     }
   };
 
+  useEffect(() => {
+    const t = setInterval(async () => {
+      try {
+        const res = await api.get('/admin/online');
+        setOnline(res.data?.online || 0);
+      } catch {}
+    }, 15000);
+    return () => clearInterval(t);
+  }, []);
+
   const exportUsage = async () => {
     const q = new URLSearchParams();
     if (range) q.set('range', range);
@@ -132,6 +143,15 @@ const AdminDashboard = () => {
     document.body.appendChild(link);
     link.click();
     link.remove();
+  };
+
+  const viewDetail = async (userId) => {
+    try {
+      const res = await api.get(`/admin/users/${userId}`);
+      setDetail(res.data);
+    } catch (e) {
+      alert('Failed to load user detail');
+    }
   };
 
   const deleteUser = async (id) => {
@@ -193,6 +213,7 @@ const AdminDashboard = () => {
                 <Td>{user.email}</Td>
                 <Td>
                   <Button onClick={() => deleteUser(user.id)}>Delete</Button>
+                  <Button onClick={() => viewDetail(user.id)} style={{ marginLeft: '0.5rem', background: '#1890ff' }}>Details</Button>
                 </Td>
               </tr>
             ))}
@@ -268,6 +289,58 @@ const AdminDashboard = () => {
           </tbody>
         </Table>
       </div>
+
+      {detail && (
+        <div style={{ marginTop: '2rem' }}>
+          <h2>User Detail: {detail.user?.username} ({detail.user?.email})</h2>
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '300px' }}>
+              <h3>Recent Sessions</h3>
+              <Table>
+                <thead>
+                  <tr><Th>Started</Th><Th>Ended</Th><Th>Duration (min)</Th></tr>
+                </thead>
+                <tbody>
+                  {(detail.usage || []).map(s => (
+                    <tr key={s.id}>
+                      <Td>{new Date(s.startedAt).toLocaleString()}</Td>
+                      <Td>{s.endedAt ? new Date(s.endedAt).toLocaleString() : '-'}</Td>
+                      <Td>{((s.durationSeconds || 0) / 60).toFixed(1)}</Td>
+                    </tr>
+                  ))}
+                  {(!detail.usage || detail.usage.length === 0) && (
+                    <tr><Td colSpan="3" style={{ textAlign: 'center' }}>No sessions</Td></tr>
+                  )}
+                </tbody>
+              </Table>
+            </div>
+            <div style={{ flex: 1, minWidth: '300px' }}>
+              <h3>Recent Calls</h3>
+              <Table>
+                <thead>
+                  <tr><Th>Type</Th><Th>Status</Th><Th>Duration (min)</Th><Th>At</Th></tr>
+                </thead>
+                <tbody>
+                  {(detail.calls || []).map(c => (
+                    <tr key={c.id}>
+                      <Td>{c.type}</Td>
+                      <Td>{c.status}</Td>
+                      <Td>{((c.duration || 0) / 60).toFixed(1)}</Td>
+                      <Td>{new Date(c.createdAt).toLocaleString()}</Td>
+                    </tr>
+                  ))}
+                  {(!detail.calls || detail.calls.length === 0) && (
+                    <tr><Td colSpan="4" style={{ textAlign: 'center' }}>No calls</Td></tr>
+                  )}
+                </tbody>
+              </Table>
+            </div>
+          </div>
+          <div style={{ marginTop: '1rem' }}>
+            <Button onClick={() => setDetail(null)} style={{ background: '#333' }}>Close</Button>
+          </div>
+        </div>
+      )}
     </Container>
   );
 };
