@@ -29,7 +29,17 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);
-router.post('/profile-pic', protect, upload.single('profilePic'), uploadProfilePic);
+// Multer error-safe wrapper to avoid 500s on client for file type/size issues
+const safeUpload = (req, res, next) => {
+    upload.single('profilePic')(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({ message: err.message });
+        }
+        next();
+    });
+};
+
+router.post('/profile-pic', protect, safeUpload, uploadProfilePic);
 router.delete('/profile-pic', protect, deleteProfilePic);
 router.get('/search', protect, searchUsers);
 router.get('/find/:uniqueCode', protect, getUserByUniqueCode);

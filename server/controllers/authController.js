@@ -131,7 +131,11 @@ exports.login = async (req, res) => {
         
         const user = await User.findOne({ 
             where: { 
-                [Op.or]: [{ username: username }, { email: username }] 
+                [Op.or]: [
+                    // Case-insensitive username match
+                    sequelize.where(sequelize.fn('LOWER', sequelize.col('username')), username.toLowerCase()),
+                    { email: username }
+                ] 
             } 
         });
 

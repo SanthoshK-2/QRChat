@@ -56,7 +56,11 @@ const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 1000, standa
 app.use('/api', generalLimiter);
 app.use('/api/auth', authLimiter);
 app.use('/api/recovery', authLimiter);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Ensure uploads dir exists to prevent 500 on profile picture upload
+const fs = require('fs');
+const uploadsDir = path.join(__dirname, 'uploads');
+try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir); } catch {}
+app.use('/uploads', express.static(uploadsDir));
 
 // Health Check Route
 app.get('/health', (req, res) => {
