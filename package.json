@@ -1,6 +1,9 @@
 {
   "name": "qr-chat-root",
   "version": "1.0.0",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "npm run dev --prefix client",
     "server": "node server/index.js",
