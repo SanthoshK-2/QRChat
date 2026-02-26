@@ -477,25 +477,17 @@ exports.forgotPassword = async (req, res) => {
         user.resetPasswordExpires = otpExpires;
         await user.save();
 
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            return res.json({ message: 'OTP generated; email not configured' });
-        }
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
+        const { sendEmail } = require('../utils/mailer');
+        const ok = await sendEmail({
             to: email,
             subject: 'QR Chat Password Reset OTP',
-            text: `Your OTP for password reset is: ${otp}\n\nThis OTP is valid for 15 minutes.`
-        };
-
-        await transporter.sendMail(mailOptions);
+            text: `Your OTP for password reset is: ${otp}\n\nThis OTP is valid for 15 minutes.`,
+            html: `<p>Your OTP for password reset is: <strong>${otp}</strong></p><p>This OTP is valid for 15 minutes.</p>`
+        });
+        if (!ok) {
+            console.warn('Email provider not configured or sending failed. OTP logged to server for diagnostics.');
+            return res.status(202).json({ message: 'OTP generated but mail not configured. Contact support if not received.' });
+        }
         res.json({ message: 'OTP sent to email' });
 
     } catch (error) {
