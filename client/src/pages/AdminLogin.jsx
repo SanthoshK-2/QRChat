@@ -38,6 +38,22 @@ const Input = styled.input`
   width: 100%;
 `;
 
+const InputWrap = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+`;
+
+const EyeBtn = styled.button`
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: ${({ theme }) => theme.text};
+  cursor: pointer;
+  opacity: 0.8;
+`;
+
 const Button = styled.button`
   padding: 0.9rem;
   background: ${({ theme }) => theme.primary};
@@ -60,6 +76,7 @@ const AdminLogin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showPass, setShowPass] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -94,12 +111,17 @@ const AdminLogin = () => {
           value={username} 
           onChange={e => setUsername(e.target.value)} 
         />
-        <Input 
-          type="password" 
-          placeholder="Password" 
-          value={password} 
-          onChange={e => setPassword(e.target.value)} 
-        />
+        <InputWrap>
+          <Input 
+            type={showPass ? 'text' : 'password'}
+            placeholder="Password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+          />
+          <EyeBtn type="button" onClick={() => setShowPass(!showPass)} aria-label="Toggle password visibility">
+            {showPass ? '🙈' : '👁️'}
+          </EyeBtn>
+        </InputWrap>
         {error && <ErrorMsg>{error}</ErrorMsg>}
         <Button onClick={handleLogin}>Login</Button>
       </Form>
