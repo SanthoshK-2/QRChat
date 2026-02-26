@@ -274,7 +274,6 @@ io.on('connection', (socket) => {
                 where: {
                     receiverId: userId,
                     status: 'sent'
-                    status: 'sent'
                 }
             });
 

@@ -141,8 +141,8 @@ exports.exportCallsCsv = async (req, res) => {
     const rows = await CallHistory.findAll({
       attributes: [
         'callerId',
-        [sequelize.fn('SUM', sequelize.literal(\"CASE WHEN type='audio' THEN duration ELSE 0 END\")), 'audioSeconds'],
-        [sequelize.fn('SUM', sequelize.literal(\"CASE WHEN type='video' THEN duration ELSE 0 END\")), 'videoSeconds'],
+        [sequelize.fn('SUM', sequelize.literal("CASE WHEN type='audio' THEN duration ELSE 0 END")), 'audioSeconds'],
+        [sequelize.fn('SUM', sequelize.literal("CASE WHEN type='video' THEN duration ELSE 0 END")), 'videoSeconds'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'totalCalls']
       ],
       where,
@@ -161,7 +161,7 @@ exports.exportCallsCsv = async (req, res) => {
       }
     );
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=\"calls.csv\"');
+    res.setHeader('Content-Disposition', 'attachment; filename="calls.csv"');
     res.send(csv);
   } catch (e) {
     console.error(e);
