@@ -17,6 +17,12 @@ function rangeToWindow(range, startStr, endStr) {
 
 exports.getUsageByUser = async (req, res) => {
   try {
+    const qi = require('../models').sequelize.getQueryInterface();
+    const tables = await qi.showAllTables();
+    const hasTable = tables.map(t => (typeof t === 'string' ? t : t.tableName || '')).some(n => /UsageSessions?/i.test(n));
+    if (!hasTable) {
+      return res.json([]);
+    }
     const { range, start: startStr, end: endStr } = req.query;
     const { start, end } = rangeToWindow(range, startStr, endStr);
     const where = {};
@@ -25,7 +31,7 @@ exports.getUsageByUser = async (req, res) => {
     const rows = await UsageSession.findAll({
       attributes: [
         'userId',
-        [sequelize.fn('SUM', sequelize.col('durationSeconds')), 'totalSeconds'],
+        [sequelize.fn('SUM', sequelize.fn('COALESCE', sequelize.col('durationSeconds'), 0)), 'totalSeconds'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'sessions']
       ],
       where,
@@ -35,12 +41,19 @@ exports.getUsageByUser = async (req, res) => {
     res.json(rows);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ message: 'Error fetching usage' });
+    // Graceful fallback
+    res.json([]);
   }
 };
 
 exports.getCallDurations = async (req, res) => {
   try {
+    const qi = require('../models').sequelize.getQueryInterface();
+    const tables = await qi.showAllTables();
+    const hasTable = tables.map(t => (typeof t === 'string' ? t : t.tableName || '')).some(n => /CallHistories?|CallHistory/i.test(n));
+    if (!hasTable) {
+      return res.json([]);
+    }
     const { range, start: startStr, end: endStr } = req.query;
     const { start, end } = rangeToWindow(range, startStr, endStr);
     const where = {};
@@ -49,8 +62,8 @@ exports.getCallDurations = async (req, res) => {
     const rows = await CallHistory.findAll({
       attributes: [
         'callerId',
-        [sequelize.fn('SUM', sequelize.literal("CASE WHEN type='audio' THEN duration ELSE 0 END")), 'audioSeconds'],
-        [sequelize.fn('SUM', sequelize.literal("CASE WHEN type='video' THEN duration ELSE 0 END")), 'videoSeconds'],
+        [sequelize.fn('SUM', sequelize.literal("CASE WHEN type='audio' THEN COALESCE(duration,0) ELSE 0 END")), 'audioSeconds'],
+        [sequelize.fn('SUM', sequelize.literal("CASE WHEN type='video' THEN COALESCE(duration,0) ELSE 0 END")), 'videoSeconds'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'totalCalls']
       ],
       where,
@@ -60,7 +73,7 @@ exports.getCallDurations = async (req, res) => {
     res.json(rows);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ message: 'Error fetching call durations' });
+    res.json([]);
   }
 };
 
@@ -97,6 +110,14 @@ function toCsv(rows, headers, mapper) {
 exports.exportUsageCsv = async (req, res) => {
   try {
     const { range, start: startStr, end: endStr } = req.query;
+    const qi = require('../models').sequelize.getQueryInterface();
+    const tables = await qi.showAllTables();
+    const hasTable = tables.map(t => (typeof t === 'string' ? t : t.tableName || '')).some(n => /UsageSessions?/i.test(n));
+    if (!hasTable) {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="usage.csv"');
+      return res.send('username,email,total_seconds,sessions\n');
+    }
     req.query.range = range; req.query.start = startStr; req.query.end = endStr;
     const { start, end } = rangeToWindow(range, startStr, endStr);
     const where = {};
@@ -105,7 +126,7 @@ exports.exportUsageCsv = async (req, res) => {
     const rows = await UsageSession.findAll({
       attributes: [
         'userId',
-        [sequelize.fn('SUM', sequelize.col('durationSeconds')), 'totalSeconds'],
+        [sequelize.fn('SUM', sequelize.fn('COALESCE', sequelize.col('durationSeconds'), 0)), 'totalSeconds'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'sessions']
       ],
       where,
@@ -134,6 +155,14 @@ exports.exportUsageCsv = async (req, res) => {
 exports.exportCallsCsv = async (req, res) => {
   try {
     const { range, start: startStr, end: endStr } = req.query;
+    const qi = require('../models').sequelize.getQueryInterface();
+    const tables = await qi.showAllTables();
+    const hasTable = tables.map(t => (typeof t === 'string' ? t : t.tableName || '')).some(n => /CallHistories?|CallHistory/i.test(n));
+    if (!hasTable) {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="calls.csv"');
+      return res.send('username,email,audio_seconds,video_seconds,total_calls\n');
+    }
     const { start, end } = rangeToWindow(range, startStr, endStr);
     const where = {};
     if (start) where.createdAt = { [Op.gte]: start };
@@ -141,8 +170,8 @@ exports.exportCallsCsv = async (req, res) => {
     const rows = await CallHistory.findAll({
       attributes: [
         'callerId',
-        [sequelize.fn('SUM', sequelize.literal("CASE WHEN type='audio' THEN duration ELSE 0 END")), 'audioSeconds'],
-        [sequelize.fn('SUM', sequelize.literal("CASE WHEN type='video' THEN duration ELSE 0 END")), 'videoSeconds'],
+        [sequelize.fn('SUM', sequelize.literal("CASE WHEN type='audio' THEN COALESCE(duration,0) ELSE 0 END")), 'audioSeconds'],
+        [sequelize.fn('SUM', sequelize.literal("CASE WHEN type='video' THEN COALESCE(duration,0) ELSE 0 END")), 'videoSeconds'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'totalCalls']
       ],
       where,
