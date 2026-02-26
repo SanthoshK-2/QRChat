@@ -4,45 +4,50 @@ import styled from 'styled-components';
 import api from '../utils/api';
 
 const Container = styled.div`
+  min-height: 100vh;
   display: flex;
-  justify-content: center;
   align-items: center;
-  height: 100vh;
+  justify-content: center;
+  padding: 1rem;
   background: ${({ theme }) => theme.body};
   color: ${({ theme }) => theme.text};
 `;
 
 const Form = styled.div`
   background: ${({ theme }) => theme.cardBg};
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  width: 300px;
+  width: 100%;
+  max-width: 360px;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  @media (min-width: 768px) {
+    padding: 2rem;
+    max-width: 420px;
+  }
 `;
 
 const Input = styled.input`
-  padding: 0.8rem;
+  padding: 0.9rem;
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.border};
   background: ${({ theme }) => theme.inputBg};
   color: ${({ theme }) => theme.text};
+  width: 100%;
 `;
 
 const Button = styled.button`
-  padding: 0.8rem;
+  padding: 0.9rem;
   background: ${({ theme }) => theme.primary};
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
-  
-  &:hover {
-    opacity: 0.9;
-  }
+  width: 100%;
+  &:hover { opacity: 0.9; }
 `;
 
 const ErrorMsg = styled.div`

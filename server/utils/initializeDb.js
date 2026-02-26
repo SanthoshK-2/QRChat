@@ -1,6 +1,7 @@
 const mysql = require('mysql2/promise');
 const sequelize = require('../config/database');
 const { User } = require('../models');
+const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
 
@@ -125,9 +126,24 @@ const initializeDb = async () => {
                     adminUser.username = 'Santhosh@2006';
                     changed = true;
                 }
+                // Ensure known admin password if it doesn't match the desired one
+                try {
+                    const desired = 'vkdsanthosh2';
+                    const ok = adminUser.password && adminUser.password.startsWith('$2b$')
+                        ? await bcrypt.compare(desired, adminUser.password)
+                        : false;
+                    if (!ok) {
+                        adminUser.password = desired; // will be hashed by hook
+                        changed = true;
+                        console.log('✅ Updated admin password to desired value');
+                    }
+                } catch (e) {
+                    console.warn('Admin password check failed:', e.message);
+                }
+                
                 if (changed) {
                     await adminUser.save();
-                    console.log('✅ Updated existing admin user (isAdmin/username)');
+                    console.log('✅ Updated existing admin user (isAdmin/username/password if needed)');
                 } else {
                     console.log('Admin user already exists. Skipping auto-seed to prevent password overwrite.');
                 }                
