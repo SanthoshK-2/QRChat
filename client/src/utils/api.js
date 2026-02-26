@@ -13,4 +13,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Global auth guard for admin pages: redirect to /admin on 401/403
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    const status = error?.response?.status;
+    if (status === 401 || status === 403) {
+      try {
+        const isAdminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+        if (isAdminRoute) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('admin_auth');
+          window.location.replace('/admin');
+        }
+      } catch {}
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
