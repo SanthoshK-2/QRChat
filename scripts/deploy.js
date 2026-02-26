@@ -23,7 +23,7 @@ if (!fs.existsSync(clientDist)) {
         );
         console.log('Placeholder index.html created in server/public.');
         console.log('--- DEPLOYMENT SCRIPT FINISHED (placeholder) ---');
-        process.exit(0);
+        // Do not exit; allow the rest of the script to proceed safely
     } catch (e) {
         console.error('Failed to create placeholder:', e);
         // Do not hard fail; continue and let server boot
@@ -39,7 +39,7 @@ try {
     fs.mkdirSync(serverPublic, { recursive: true });
 } catch (e) {
     console.error('Failed to clean/create server/public:', e);
-    process.exit(1);
+    // Soft fail: never block deployment due to static file preparation
 }
 
 // 3. Copy Files

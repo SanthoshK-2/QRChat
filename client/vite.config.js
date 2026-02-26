@@ -1,34 +1,32 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { nodePolyfills } from 'vite-plugin-node-polyfills'
-import { resolve } from 'path'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
-    nodePolyfills({
-      globals: {
-        Buffer: true,
-        global: true,
-        process: true,
-      },
-    }),
+    react()
   ],
   resolve: {
     alias: {
-      // Allow vite-plugin-node-polyfills to handle simple-peer
-      // 'simple-peer': 'simple-peer/simplepeer.min.js',
+      buffer: 'buffer',
+      process: 'process/browser',
+      util: 'util',
+      events: 'events',
+      stream: 'stream-browserify',
+      path: 'path-browserify',
+      string_decoder: 'string_decoder',
     },
   },
   define: {
-    // Avoid manual global definition if using nodePolyfills with globals: true
-    // global: 'globalThis', 
+    global: 'globalThis',
   },
   base: '/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+  },
+  optimizeDeps: {
+    include: ['buffer', 'process', 'events', 'util', 'stream-browserify', 'string_decoder'],
   },
   server: {
     host: '0.0.0.0',

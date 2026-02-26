@@ -24,6 +24,9 @@ const adminRoutes = require('./routes/adminRoutes');
 const app = express();
 const server = http.createServer(app);
 
+// Required for express-rate-limit and proxies like Render to correctly read X-Forwarded-For
+app.set('trust proxy', true);
+
 const allowList = (() => {
     const envList = (process.env.ALLOWED_ORIGINS || '')
         .split(',')
@@ -102,8 +105,6 @@ app.use('/api/recovery', recoveryRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/admin', adminRoutes);
-
-const fs = require('fs');
 
 // Standard Express Pattern: server/public is the only place we care about now
 const localPublicPath = path.join(__dirname, 'public'); 
