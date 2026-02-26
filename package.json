@@ -9,7 +9,7 @@
     "server": "node server/index.js",
     "start": "node server/index.js",
     "install-all": "npm install --prefix client && npm install --prefix server",
-    "postinstall": "npm install --prefix server && npm install --prefix client",
+    "postinstall": "echo \"postinstall skipped; handled in build\"",
     "build": "node scripts/build_and_deploy.js"
   },
   "dependencies": {
