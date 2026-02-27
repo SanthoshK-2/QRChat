@@ -331,28 +331,49 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
       }
   };
 
+  const [iceServers, setIceServers] = useState([
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:global.stun.twilio.com:3478' }
+  ]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await api.get('/ice');
+        if (mounted && res.data?.iceServers?.length) {
+          setIceServers(res.data.iceServers);
+        }
+      } catch (e) {
+        console.warn('Using default ICE servers due to fetch error');
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   const answerCall = () => {
     setCallAccepted(true);
     startTime.current = Date.now();
     try {
         const peer = new Peer({ 
             initiator: false, 
-            trickle: false, 
+            trickle: true, 
             stream,
             config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:global.stun.twilio.com:3478' }
-                ]
+                iceServers
             }
         });
 
         peer.on('signal', (data) => {
           if (data.type === 'answer' || data.type === 'pranswer' || data.sdp) {
              socket.emit('answer_call', { signal: data, to: incomingCallData.from });
-          } else {
+          } else if (data.candidate) {
              socket.emit('ice_candidate', { candidate: data, to: incomingCallData.from });
           }
+        });
+
+        socket.on('ice_candidate', (candidate) => {
+          try { peer.signal(candidate); } catch {}
         });
 
         peer.on('stream', (currentStream) => {
@@ -382,21 +403,10 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
     try {
         const peer = new Peer({ 
             initiator: true, 
-            trickle: false, 
+            trickle: true, 
             stream,
             config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' },
-                    { urls: 'stun:global.stun.twilio.com:3478' },
-                    { urls: 'stun:stun.services.mozilla.com' },
-                    { urls: 'stun:stun.vodafone.ro:3478' },
-                    { urls: 'stun:stun.stunprotocol.org:3478' },
-                    { urls: 'stun:stun.iotium.io:3478' }
-                ]
+                iceServers
             }
         });
 
@@ -449,9 +459,9 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
           setStatus('Connected');
         });
 
-        // socket.on('ice_candidate', (candidate) => {
-        //     peer.signal(candidate);
-        // });
+        socket.on('ice_candidate', (candidate) => {
+            try { peer.signal(candidate); } catch {}
+        });
 
         connectionRef.current = peer;
     } catch (err) {

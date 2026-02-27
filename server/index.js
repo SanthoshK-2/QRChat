@@ -20,6 +20,7 @@ const recoveryRoutes = require('./routes/recoveryRoutes');
 const callRoutes = require('./routes/callRoutes');
 const syncRoutes = require('./routes/syncRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const iceRoutes = require('./routes/iceRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -106,6 +107,7 @@ app.use('/api/recovery', recoveryRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/ice', iceRoutes);
 
 // Standard Express Pattern: server/public is the only place we care about now
 const localPublicPath = path.join(__dirname, 'public'); 
