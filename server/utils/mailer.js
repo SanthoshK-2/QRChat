@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 
 async function sendEmail({ to, subject, text, html }) {
-  const from = process.env.EMAIL_FROM || 'QR Chat <noreply@qrchat.app>';
+  let from = process.env.EMAIL_FROM || 'QR Chat <noreply@qrchat.app>';
 
   // Resend (recommended for Render) via HTTP API — no extra deps
   if (process.env.RESEND_API_KEY) {
@@ -21,6 +21,28 @@ async function sendEmail({ to, subject, text, html }) {
       });
       if (!res.ok) {
         const body = await res.text().catch(() => '');
+        // If domain not verified, retry with onboarding sender automatically
+        if (String(body).includes('domain is not verified')) {
+          const onboardingFrom = 'QR Chat <onboarding@resend.dev>';
+          try {
+            const retry = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                from: onboardingFrom,
+                to: [to],
+                subject,
+                html: html || `<pre>${text || ''}</pre>`
+              })
+            });
+            if (retry.ok) return true;
+          } catch (e2) {
+            console.error('Resend retry with onboarding failed:', e2.message);
+          }
+        }
         throw new Error(`Resend error: ${res.status} ${body}`);
       }
       return true;

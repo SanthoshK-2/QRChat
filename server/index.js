@@ -25,7 +25,8 @@ const app = express();
 const server = http.createServer(app);
 
 // Required for express-rate-limit and proxies like Render to correctly read X-Forwarded-For
-app.set('trust proxy', true);
+// Use "one proxy hop" to satisfy express-rate-limit validation (avoids permissive=true)
+app.set('trust proxy', 1);
 
 const allowList = (() => {
     const envList = (process.env.ALLOWED_ORIGINS || '')
