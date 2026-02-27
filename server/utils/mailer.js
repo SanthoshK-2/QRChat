@@ -1,7 +1,8 @@
 const nodemailer = require('nodemailer');
 
 async function sendEmail({ to, subject, text, html }) {
-  let from = process.env.EMAIL_FROM || 'QR Chat <noreply@qrchat.app>';
+  let from = process.env.EMAIL_FROM 
+    || (process.env.RESEND_API_KEY ? 'QR Chat <onboarding@resend.dev>' : 'QR Chat <noreply@qrchat.app>');
 
   // Resend (recommended for Render) via HTTP API — no extra deps
   if (process.env.RESEND_API_KEY) {
