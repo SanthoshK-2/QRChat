@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import api from '../utils/api';
+import io from 'socket.io-client';
+import { SERVER_URL } from '../config';
 
 const Container = styled.div`
   padding: 2rem;
@@ -72,6 +74,26 @@ const AdminDashboard = () => {
     }
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const s = io(SERVER_URL, { reconnection: true });
+    s.on('connect', () => {
+      s.emit('admin_join');
+    });
+    s.on('admin_online_update', (data) => {
+      if (typeof data?.online === 'number') setOnline(data.online);
+    });
+    s.on('admin_usage_update', () => {
+      fetchData();
+      if (detail?.user?.id) {
+        api.get(`/admin/users/${detail.user.id}`).then(res => setDetail(res.data)).catch(() => {});
+      }
+    });
+    s.on('admin_calls_update', () => {
+      fetchData();
+    });
+    return () => s.close();
+  }, [detail?.user?.id, range, start, end]);
 
   const fetchData = async () => {
     try {

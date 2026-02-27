@@ -142,21 +142,39 @@ const Input = styled.input`
 const NotificationWrapper = styled.div`
   position: relative;
   display: inline-block;
+  z-index: 1200; /* Keep above header on mobile */
+`;
+
+const NotificationBackdrop = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.25);
+  z-index: 2000;
 `;
 
 const NotificationDropdown = styled.div`
   position: absolute;
-  top: 120%;
+  top: 110%;
   right: 0;
   width: 320px;
+  max-width: 92vw;
   background: ${({ theme }) => theme.sectionBackground};
   border: 1px solid ${({ theme }) => theme.border};
-  border-radius: 8px;
-  box-shadow: 0 4px 12px ${({ theme }) => theme.shadow};
-  z-index: 1000;
-  max-height: 400px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  z-index: 2001;
+  max-height: 60vh;
   overflow-y: auto;
-  padding: 0.5rem;
+  padding: 0.75rem;
+  
+  @media (max-width: 480px) {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
 `;
 
 const NotificationItem = styled.div`
@@ -206,6 +224,23 @@ const Dashboard = () => {
   const [connectCode, setConnectCode] = useState('');
   const [chats, setChats] = useState([]);
   const [requests, setRequests] = useState([]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleIncomingRequest = () => {
+      api.get('/connections/pending').then(res => setRequests(res.data)).catch(() => {});
+    };
+    const handleAccepted = () => {
+      api.get('/connections').then(res => setChats(res.data)).catch(() => {});
+      api.get('/connections/pending').then(res => setRequests(res.data)).catch(() => {});
+    };
+    socket.on('connection_request', handleIncomingRequest);
+    socket.on('connection_accepted', handleAccepted);
+    return () => {
+      socket?.off('connection_request', handleIncomingRequest);
+      socket?.off('connection_accepted', handleAccepted);
+    };
+  }, [socket]);
 
   // E2EE Helper (Duplicated from Chat.jsx, ideally move to util)
   const getSecretKey = (user1Id, user2Id) => {
@@ -400,6 +435,8 @@ const Dashboard = () => {
                     {requests.length > 0 && <Badge>{requests.length}</Badge>}
                 </IconButton>
                 {showNotifications && (
+                    <>
+                    <NotificationBackdrop onClick={() => setShowNotifications(false)} />
                     <NotificationDropdown>
                         <h4 style={{ margin: '0 0 0.5rem 0', padding: '0.5rem', borderBottom: `1px solid ${theme.border}` }}>Notifications</h4>
                         {requests.length === 0 ? (
@@ -422,6 +459,7 @@ const Dashboard = () => {
                             ))
                         )}
                     </NotificationDropdown>
+                    </>
                 )}
             </NotificationWrapper>
             <IconButton onClick={() => navigate('/settings')}><FaCog /></IconButton>

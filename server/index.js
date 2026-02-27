@@ -225,6 +225,13 @@ app.set('io', io);
 const onlineUsers = new Map(); 
 const activeSessions = new Map(); // userId -> UsageSession id
 
+const emitAdminOnline = async () => {
+    try {
+        const count = await User.count({ where: { isOnline: true } });
+        io.to('admins').emit('admin_online_update', { online: count });
+    } catch {}
+};
+
 const broadcastStatus = async (userId, isOnline) => {
     try {
         const blocks = await BlockList.findAll({
@@ -260,6 +267,11 @@ io.on('connection', (socket) => {
   // Active call sessions in memory: key is sorted pair "a|b"
   const makeKey = (a, b) => [a, b].sort().join('|');
 
+  socket.on('admin_join', () => {
+    socket.join('admins');
+    emitAdminOnline();
+  });
+
   socket.on('join_room', async (userId) => {
     if (!userId) return;
     socket.join(userId); 
@@ -272,12 +284,14 @@ io.on('connection', (socket) => {
                 // Selective broadcast
                 await broadcastStatus(userId, true);
             }
+            emitAdminOnline();
 
         // Start usage session if none active
         if (!activeSessions.has(userId)) {
             const { UsageSession } = require('./models');
             const session = await UsageSession.create({ userId, startedAt: new Date() });
             activeSessions.set(userId, session.id);
+            io.to('admins').emit('admin_usage_update');
         }
             // Sync: Deliver all pending messages for this user
             const pendingMessages = await Message.findAll({
@@ -487,6 +501,7 @@ io.on('connection', (socket) => {
             endedAt: new Date()
           }).catch(() => {});
           activeCalls.delete(entry.key);
+          io.to('admins').emit('admin_calls_update');
         }
       } catch {}
   });
@@ -520,6 +535,7 @@ io.on('connection', (socket) => {
             endedAt: end
           }).catch(() => {});
           if (storedKey) activeCalls.delete(storedKey);
+          io.to('admins').emit('admin_calls_update');
         }
       } catch {}
   });
@@ -543,6 +559,7 @@ io.on('connection', (socket) => {
                     // Selective broadcast
                     await broadcastStatus(userId, false);
                 }
+                emitAdminOnline();
             }
             // Close usage session if active
             if (activeSessions.has(userId)) {
@@ -557,6 +574,7 @@ io.on('connection', (socket) => {
                     await session.save();
                 }
                 activeSessions.delete(userId);
+                io.to('admins').emit('admin_usage_update');
             }
         } catch (e) {
             console.error(e);
