@@ -9,7 +9,7 @@ require('dotenv').config();
 
 const sequelize = require('./config/database');
 const initializeDb = require('./utils/initializeDb');
-const { User, Message, Group, GroupMember, BlockList } = require('./models');
+const { User, Message, Group, GroupMember, BlockList, CallHistory } = require('./models');
 const { Op } = require('sequelize');
 
 const authRoutes = require('./routes/authRoutes');
@@ -257,6 +257,8 @@ const broadcastStatus = async (userId, isOnline) => {
 
 io.on('connection', (socket) => {
   console.log(`User Connected: ${socket.id}`);
+  // Active call sessions in memory: key is sorted pair "a|b"
+  const makeKey = (a, b) => [a, b].sort().join('|');
 
   socket.on('join_room', async (userId) => {
     if (!userId) return;
@@ -427,8 +429,35 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('call_user', (data) => {
+    // Track initiated call
+    try {
+      const key = makeKey(data.from, data.userToCall);
+      activeCalls.set(key, {
+        callerId: data.from,
+        receiverId: data.userToCall,
+        type: data.type || 'audio',
+        startedAt: new Date(),
+        accepted: false
+      });
+    } catch {}
+  });
+
   socket.on('answer_call', (data) => {
     io.to(data.to).emit('call_accepted', data.signal);
+    // Mark as accepted and reset start time to now for accurate duration
+    try {
+      // data.to is the callerId; socket is callee
+      // We need both ids; find from rooms or payload we tracked
+      for (const [key, val] of activeCalls.entries()) {
+        if ((val.callerId === data.to && val.receiverId) || key.includes(data.to)) {
+          val.accepted = true;
+          val.startedAt = new Date();
+          activeCalls.set(key, val);
+          break;
+        }
+      }
+    } catch {}
   });
   
   socket.on('ice_candidate', (data) => {
@@ -439,6 +468,27 @@ io.on('connection', (socket) => {
   socket.on('reject_call', (data) => {
       // data: { to }
       io.to(data.to).emit('call_rejected');
+      // Persist rejected
+      try {
+        const key = makeKey(socket.userId || '', data.to);
+        const entry = (() => {
+          for (const [k, v] of activeCalls.entries()) {
+            if (k.includes(data.to)) return { key: k, val: v };
+          }
+          return null;
+        })();
+        if (entry && entry.val) {
+          CallHistory.create({
+            callerId: entry.val.callerId,
+            receiverId: entry.val.receiverId,
+            type: entry.val.type,
+            status: 'rejected',
+            duration: 0,
+            endedAt: new Date()
+          }).catch(() => {});
+          activeCalls.delete(entry.key);
+        }
+      } catch {}
   });
   
   socket.on('end_call', async (data) => {
@@ -446,6 +496,32 @@ io.on('connection', (socket) => {
       io.to(to).emit('call_ended');
       // Also notify the caller (self) to update history
       socket.emit('call_ended');
+      // Persist completion/missed on server as a fallback
+      try {
+        const key = makeKey(socket.userId || '', to);
+        let storedKey = null; let info = null;
+        for (const [k, v] of activeCalls.entries()) {
+          if ((v.callerId === to && v.receiverId) || k.includes(to)) {
+            storedKey = k; info = v; break;
+          }
+        }
+        if (info) {
+          const end = new Date();
+          const dur = typeof duration === 'number'
+            ? Math.max(0, Math.floor(duration))
+            : (info.startedAt ? Math.max(0, Math.floor((end - info.startedAt) / 1000)) : 0);
+          const status = info.accepted ? 'completed' : 'missed';
+          CallHistory.create({
+            callerId: info.callerId,
+            receiverId: info.receiverId,
+            type: info.type,
+            status,
+            duration: dur,
+            endedAt: end
+          }).catch(() => {});
+          if (storedKey) activeCalls.delete(storedKey);
+        }
+      } catch {}
   });
 
   socket.on('disconnect', async () => {

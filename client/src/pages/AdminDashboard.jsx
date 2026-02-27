@@ -70,7 +70,6 @@ const AdminDashboard = () => {
       navigate('/admin');
       return;
     }
-
     fetchData();
   }, []);
 
@@ -110,6 +109,19 @@ const AdminDashboard = () => {
     }, 15000);
     return () => clearInterval(t);
   }, []);
+
+  // Poll usage and calls regularly to reflect near‑real‑time state
+  useEffect(() => {
+    const t = setInterval(() => {
+      fetchData();
+      if (detail?.user?.id) {
+        api.get(`/admin/users/${detail.user.id}`)
+          .then(res => setDetail(res.data))
+          .catch(() => {});
+      }
+    }, 15000);
+    return () => clearInterval(t);
+  }, [range, start, end, detail?.user?.id]);
 
   const exportUsage = async () => {
     const q = new URLSearchParams();
