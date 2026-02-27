@@ -435,6 +435,12 @@ io.on('connection', (socket) => {
       io.to(data.to).emit('ice_candidate', data.candidate);
   });
   
+  // Explicit reject event to improve UX and avoid lingering peers
+  socket.on('reject_call', (data) => {
+      // data: { to }
+      io.to(data.to).emit('call_rejected');
+  });
+  
   socket.on('end_call', async (data) => {
       const { to, duration } = data;
       io.to(to).emit('call_ended');

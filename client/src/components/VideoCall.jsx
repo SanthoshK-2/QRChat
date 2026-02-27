@@ -351,6 +351,19 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
     return () => { mounted = false; };
   }, []);
 
+  const clearSocketCallHandlers = () => {
+    if (!socket) return;
+    socket.off('call_accepted');
+    socket.off('ice_candidate');
+    socket.off('call_rejected');
+  };
+
+  useEffect(() => {
+    return () => {
+      clearSocketCallHandlers();
+    };
+  }, []);
+
   const answerCall = () => {
     setCallAccepted(true);
     startTime.current = Date.now();
@@ -372,8 +385,14 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
           }
         });
 
+        clearSocketCallHandlers();
         socket.on('ice_candidate', (candidate) => {
           try { peer.signal(candidate); } catch {}
+        });
+        socket.on('call_rejected', () => {
+          setStatus('Call rejected');
+          saveCallHistory('rejected');
+          onClose();
         });
 
         peer.on('stream', (currentStream) => {
@@ -451,6 +470,7 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
             setStatus('Call Error: ' + err.message);
         });
 
+        clearSocketCallHandlers();
         socket.on('call_accepted', (signal) => {
           stopRinging(); // Stop ringing immediately
           setCallAccepted(true);
@@ -462,6 +482,11 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
         socket.on('ice_candidate', (candidate) => {
             try { peer.signal(candidate); } catch {}
         });
+        socket.on('call_rejected', () => {
+            setStatus('Call rejected');
+            saveCallHistory('rejected');
+            onClose();
+        });
 
         connectionRef.current = peer;
     } catch (err) {
@@ -469,6 +494,19 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
         setStatus("Call failed to start");
     }
   };
+  
+  // Timeout if no connection within 25s
+  useEffect(() => {
+    if (!isCaller && !incomingCallData) return;
+    const timeout = setTimeout(() => {
+      if (!callAccepted) {
+        setStatus('Call timeout');
+        saveCallHistory(isCaller ? 'missed' : 'rejected');
+        onClose();
+      }
+    }, 25000);
+    return () => clearTimeout(timeout);
+  }, [isCaller, incomingCallData, callAccepted]);
   
   // Auto-call if initiator
   useEffect(() => {
@@ -534,6 +572,10 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
     
     saveCallHistory(callStatus);
 
+    if (!callAccepted) {
+      // Explicit reject if leaving before accepting
+      socket.emit('reject_call', { to: otherUserId });
+    }
     socket.emit('end_call', { to: otherUserId });
     onClose();
   };
