@@ -82,10 +82,11 @@ const BackLink = styled.div`
 `;
 
 const ForgotPassword = () => {
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(1); // 1: email, 2: otp, 3: new password
     const [email, setEmail] = useState('');
     const [otp, setOtp] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
@@ -98,9 +99,27 @@ const ForgotPassword = () => {
         try {
             const { data } = await api.post('/auth/forgot-password', { email });
             setMessage(data.message);
+            // If email provider not configured, we still generated OTP; user can fetch from inbox once configured.
             setStep(2);
         } catch (err) {
             setError(err.response?.data?.message || 'Error sending OTP');
+        }
+    };
+
+    const handleVerifyOtp = async (e) => {
+        e.preventDefault();
+        setMessage('');
+        setError('');
+        try {
+            const { data } = await api.post('/auth/verify-otp', { email, otp });
+            if (data.ok) {
+                setMessage('OTP verified. Please enter your new password.');
+                setStep(3);
+            } else {
+                setError('Invalid OTP');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Invalid or expired OTP');
         }
     };
 
@@ -108,6 +127,10 @@ const ForgotPassword = () => {
         e.preventDefault();
         setMessage('');
         setError('');
+        if (newPassword !== confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
         try {
             const { data } = await api.post('/auth/reset-password', { email, otp, newPassword });
             setMessage(data.message);
@@ -133,9 +156,9 @@ const ForgotPassword = () => {
                         />
                         <Button type="submit">Send OTP</Button>
                     </form>
-                ) : (
-                    <form onSubmit={handleResetPassword}>
-                         <p style={{marginBottom: '1rem', textAlign: 'center'}}>Enter the OTP sent to {email}</p>
+                ) : step === 2 ? (
+                    <form onSubmit={handleVerifyOtp}>
+                        <p style={{marginBottom: '1rem', textAlign: 'center'}}>Enter the OTP sent to {email}</p>
                         <Input 
                             type="text" 
                             placeholder="Enter 6-digit OTP" 
@@ -143,6 +166,11 @@ const ForgotPassword = () => {
                             onChange={(e) => setOtp(e.target.value)} 
                             required 
                         />
+                        <Button type="submit">Verify OTP</Button>
+                    </form>
+                ) : (
+                    <form onSubmit={handleResetPassword}>
+                        <p style={{marginBottom: '1rem', textAlign: 'center'}}>Create a new password</p>
                         <PasswordWrapper>
                             <Input 
                                 type={showPassword ? "text" : "password"} 
@@ -156,7 +184,14 @@ const ForgotPassword = () => {
                                 {showPassword ? <FaEyeSlash /> : <FaEye />}
                             </EyeIcon>
                         </PasswordWrapper>
-                         <p style={{fontSize: '0.8rem', color: '#666', marginBottom: '1rem'}}>
+                        <Input 
+                            type={showPassword ? "text" : "password"} 
+                            placeholder="Confirm Password" 
+                            value={confirmPassword} 
+                            onChange={(e) => setConfirmPassword(e.target.value)} 
+                            required 
+                        />
+                        <p style={{fontSize: '0.8rem', color: '#666', marginBottom: '1rem'}}>
                             Password must be at least 8 chars, include uppercase, lowercase, number & symbol.
                         </p>
                         <Button type="submit">Reset Password</Button>

@@ -531,6 +531,30 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
+// Verify OTP without changing password (for 3-step UI)
+exports.verifyOtp = async (req, res) => {
+    const { email, otp } = req.body;
+    try {
+        if (!email || !otp) {
+            return res.status(400).json({ message: 'Please provide email and OTP' });
+        }
+        const user = await User.findOne({
+            where: {
+                email,
+                resetPasswordOTP: otp,
+                resetPasswordExpires: { [Op.gt]: new Date() }
+            }
+        });
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+        return res.json({ ok: true, message: 'OTP verified' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // Admin: Get All Users
 exports.getAllUsers = async (req, res) => {
     try {

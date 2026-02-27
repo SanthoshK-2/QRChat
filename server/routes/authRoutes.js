@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getProfile, updateProfile, searchUsers, forgotPassword, resetPassword, getUserByUniqueCode, uploadProfilePic, deleteProfilePic, getUserById, getAllUsers, deleteUser } = require('../controllers/authController');
+const { register, login, getProfile, updateProfile, searchUsers, forgotPassword, resetPassword, getUserByUniqueCode, uploadProfilePic, deleteProfilePic, getUserById, getAllUsers, deleteUser, verifyOtp } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 const multer = require('multer');
 const path = require('path');
@@ -26,6 +26,7 @@ const upload = multer({
 router.post('/register', register);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
+router.post('/verify-otp', verifyOtp);
 router.post('/reset-password', resetPassword);
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);
