@@ -224,6 +224,10 @@ const Dashboard = () => {
   const [connectCode, setConnectCode] = useState('');
   const [chats, setChats] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [showUserSearch, setShowUserSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (!socket) return;
@@ -241,6 +245,27 @@ const Dashboard = () => {
       socket?.off('connection_accepted', handleAccepted);
     };
   }, [socket]);
+
+  useEffect(() => {
+    let timer = null;
+    if (showUserSearch && searchQuery.trim().length > 0) {
+      setIsSearching(true);
+      timer = setTimeout(async () => {
+        try {
+          const res = await api.get('/auth/search?query=' + encodeURIComponent(searchQuery.trim()));
+          setSearchResults(Array.isArray(res.data) ? res.data : []);
+        } catch {
+          setSearchResults([]);
+        } finally {
+          setIsSearching(false);
+        }
+      }, 300);
+    } else {
+      setSearchResults([]);
+      setIsSearching(false);
+    }
+    return () => { if (timer) clearTimeout(timer); };
+  }, [showUserSearch, searchQuery]);
 
   // E2EE Helper (Duplicated from Chat.jsx, ideally move to util)
   const getSecretKey = (user1Id, user2Id) => {
@@ -366,6 +391,19 @@ const Dashboard = () => {
           navigate(`/chat/${res.data.id}`);
       } catch (e) {
           alert(e.response?.data?.message || 'User not found');
+      }
+  };
+
+  const handleConnectToUser = async (targetUser) => {
+      try {
+          const res = await api.post('/connections/request', { targetId: targetUser.id });
+          if (res.data?.status === 'accepted') {
+              navigate(`/chat/${targetUser.id}`);
+          } else {
+              alert(res.data?.message || 'Request sent');
+          }
+      } catch (e) {
+          alert(e.response?.data?.message || 'Failed to send request');
       }
   };
 
@@ -595,9 +633,40 @@ const Dashboard = () => {
                  </>
              ) : (
                  <>
-                    <Button onClick={() => setShowScanner(true)}>
-                        <FaQrcode /> Scan QR Code
-                    </Button>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <Button onClick={() => setShowScanner(true)} style={{ flex: 1 }}>
+                          <FaQrcode /> Scan QR Code
+                      </Button>
+                      <Button onClick={() => { setShowUserSearch(s => !s); }} style={{ background: theme.secondary, flex: '0 0 auto' }}>
+                          <FaSearch /> Search
+                      </Button>
+                    </div>
+                    
+                    {showUserSearch && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <Input 
+                          placeholder="Search Global Account by Username"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <div style={{ maxHeight: '40vh', overflowY: 'auto', border: `1px solid ${theme.border}`, borderRadius: 8 }}>
+                          {isSearching && <p style={{ padding: '0.75rem', color: theme.subText }}>Searching...</p>}
+                          {!isSearching && searchResults.length === 0 && searchQuery.trim() !== '' && (
+                            <p style={{ padding: '0.75rem', color: theme.subText }}>No global users found</p>
+                          )}
+                          {searchResults.map(u => (
+                            <div key={u.id} onClick={() => handleConnectToUser(u)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.75rem', cursor: 'pointer', borderBottom: `1px solid ${theme.border}` }}>
+                              <Avatar user={u} size="34px" />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 'bold' }}>{u.username}</div>
+                                <div style={{ fontSize: '0.8rem', color: theme.subText }}>{u.bio || 'Global account'}</div>
+                              </div>
+                              <span style={{ background: theme.primary, color: 'white', borderRadius: 6, padding: '4px 8px', fontSize: '0.75rem' }}>Connect</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     
                     <div style={{ margin: '2rem 0', textAlign: 'center', fontWeight: 'bold' }}>OR</div>
                     
