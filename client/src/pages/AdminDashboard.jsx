@@ -102,33 +102,55 @@ const AdminDashboard = () => {
   }, [detail?.user?.id, range, start, end]);
 
   const fetchData = async () => {
-    try {
-        setLoading(true);
-        const q = new URLSearchParams();
-        if (range) q.set('range', range);
-        if (range === 'custom' && start && end) {
-          q.set('start', start);
-          q.set('end', end);
-        }
-    const [uRes, usageRes, callsRes, onlineRes, countsRes] = await Promise.all([
-          api.get('/auth/all-users'),
-          api.get('/admin/usage/users?' + q.toString()),
-          api.get('/admin/usage/calls?' + q.toString()),
-          api.get('/admin/online'),
-          api.get('/admin/users/counts')
-        ]);
-        setUsers(uRes.data);
-        setUsage(usageRes.data || []);
-        setCalls(callsRes.data || []);
-        setOnline(onlineRes.data?.online || 0);
-        setLocalCount(countsRes.data?.local || 0);
-        setGlobalCount(countsRes.data?.global || 0);
-        setLoading(false);
-    } catch (e) {
-        console.error(e);
-        setError("Failed to load admin data");
-        setLoading(false);
+    setLoading(true);
+    setError(null);
+    const q = new URLSearchParams();
+    if (range) q.set('range', range);
+    if (range === 'custom' && start && end) {
+      q.set('start', start);
+      q.set('end', end);
     }
+    let anyOk = false;
+    try {
+      const uRes = await api.get('/auth/all-users');
+      setUsers(Array.isArray(uRes.data) ? uRes.data : []);
+      anyOk = true;
+    } catch (e) {
+      console.warn('Load users failed', e?.response?.status || e?.message);
+    }
+    try {
+      const usageRes = await api.get('/admin/usage/users?' + q.toString());
+      setUsage(usageRes.data || []);
+      anyOk = true;
+    } catch (e) {
+      console.warn('Load usage failed', e?.response?.status || e?.message);
+    }
+    try {
+      const callsRes = await api.get('/admin/usage/calls?' + q.toString());
+      setCalls(callsRes.data || []);
+      anyOk = true;
+    } catch (e) {
+      console.warn('Load calls failed', e?.response?.status || e?.message);
+    }
+    try {
+      const onlineRes = await api.get('/admin/online');
+      setOnline(onlineRes.data?.online || 0);
+      anyOk = true;
+    } catch (e) {
+      console.warn('Load online failed', e?.response?.status || e?.message);
+    }
+    try {
+      const countsRes = await api.get('/admin/users/counts');
+      setLocalCount(countsRes.data?.local || 0);
+      setGlobalCount(countsRes.data?.global || 0);
+      anyOk = true;
+    } catch (e) {
+      console.warn('Load counts failed', e?.response?.status || e?.message);
+    }
+    if (!anyOk) {
+      setError("Failed to load admin data");
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
