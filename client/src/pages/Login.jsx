@@ -211,6 +211,7 @@ const Login = () => {
   };
 
   return (
+    <>
     <Container>
       {toast && <Toast type={toast.type}>{toast.message}</Toast>}
       <Card>
@@ -274,6 +275,7 @@ const Login = () => {
     <SecureFooter>
       <FaLock color="#16a34a" /> End‑to‑End Encrypted
     </SecureFooter>
+    </>
   );
 };
 
