@@ -290,7 +290,8 @@ const Chat = () => {
           .filter(msg => !hidden.has(msg.id))
           .map(msg => {
             if (msg.deletedAt) {
-              return { ...msg, type: 'deleted', content: 'This Message is Deleted by User' };
+              const tomb = msg.senderId === user.id ? 'You deleted this message' : 'This message was deleted';
+              return { ...msg, type: 'deleted', content: tomb };
             }
             return { 
               ...msg,
@@ -365,7 +366,11 @@ const Chat = () => {
       });
       
       socket.on('message_deleted', (messageId) => {
-        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, type: 'deleted', content: 'This Message is Deleted by User', deletedAt: new Date().toISOString() } : m));
+        setMessages(prev => prev.map(m => {
+          if (m.id !== messageId) return m;
+          const tomb = m.senderId === user.id ? 'You deleted this message' : 'This message was deleted';
+          return { ...m, type: 'deleted', content: tomb, deletedAt: new Date().toISOString() };
+        }));
       });
       
       // call_user listener moved to CallContext
@@ -677,7 +682,7 @@ const Chat = () => {
   const deleteOwnMessage = async (msg) => {
     try {
       await api.delete(`/chat/${msg.id}`);
-      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, type: 'deleted', content: 'This Message is Deleted by User', deletedAt: new Date().toISOString() } : m));
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, type: 'deleted', content: 'You deleted this message', deletedAt: new Date().toISOString() } : m));
       if (socket) {
         socket.emit('delete_message', { messageId: msg.id, senderId: msg.senderId, receiverId: msg.receiverId });
       }
@@ -826,8 +831,8 @@ const Chat = () => {
             style={{ cursor: 'pointer' }}
           >
             {(msg.type === 'deleted' || msg.deletedAt) && (
-                <div style={{ fontStyle: 'italic', color: theme.subText }}>
-                    This Message is Deleted by User
+                <div style={{ fontStyle: 'italic', color: theme.subText, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ opacity: 0.8 }}>{msg.content || 'This message was deleted'}</span>
                 </div>
             )}
             {msg.type === 'text' && !msg.deletedAt && (
