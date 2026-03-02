@@ -161,6 +161,7 @@ const Chat = () => {
   const [messageToShare, setMessageToShare] = useState(null);
   const [connectedUsers, setConnectedUsers] = useState([]);
   const typingTimeoutRef = useRef(null);
+  const [deleteModalMsg, setDeleteModalMsg] = useState(null);
 
   // Menu State
   const [menuOpen, setMenuOpen] = useState(false);
@@ -268,12 +269,26 @@ const Chat = () => {
       }
   };
 
+  const getHideKey = () => `hide:${user.id}:${otherUserId}`;
+  const loadHidden = () => {
+    try {
+      const raw = localStorage.getItem(getHideKey());
+      const arr = raw ? JSON.parse(raw) : [];
+      return new Set(arr);
+    } catch { return new Set(); }
+  };
+  const saveHidden = (set) => {
+    try { localStorage.setItem(getHideKey(), JSON.stringify(Array.from(set))); } catch {}
+  };
+
   useEffect(() => {
     const fetchMessages = async () => {
       try {
         const { data } = await api.get(`/chat/${otherUserId}`);
+        const hidden = loadHidden();
         const decryptedMessages = data
           .filter(msg => !msg.deletedAt)
+          .filter(msg => !hidden.has(msg.id))
           .map(msg => ({
             ...msg,
             content: msg.type === 'text' ? decryptMessage(msg.content) : msg.content
@@ -667,6 +682,13 @@ const Chat = () => {
     }
   };
 
+  const deleteForMe = (msg) => {
+    const hidden = loadHidden();
+    hidden.add(msg.id);
+    saveHidden(hidden);
+    setMessages(prev => prev.filter(m => m.id !== msg.id));
+  };
+
   const downloadFile = async (url, filename) => {
       try {
           const response = await fetch(`${SERVER_URL}${url}`);
@@ -839,8 +861,11 @@ const Chat = () => {
                         ) : (
                         <ActionButton onClick={(e) => { e.stopPropagation(); replaceFileMessage(msg); }}>Replace</ActionButton>
                         )}
-                        <ActionButton onClick={(e) => { e.stopPropagation(); deleteOwnMessage(msg); }} style={{ color: '#ff4d4f', borderColor: '#ff4d4f' }}>Delete</ActionButton>
+                        <ActionButton onClick={(e) => { e.stopPropagation(); setDeleteModalMsg(msg); }} style={{ color: '#ff4d4f', borderColor: '#ff4d4f' }}>Delete</ActionButton>
                     </>
+                )}
+                {!canEdit(msg) && (
+                    <ActionButton onClick={(e) => { e.stopPropagation(); setDeleteModalMsg(msg); }} style={{ color: '#ff4d4f', borderColor: '#ff4d4f' }}>Delete</ActionButton>
                 )}
               </div>
             )}
@@ -1003,6 +1028,36 @@ const Chat = () => {
                     <p style={{ margin: 0, fontSize: '1rem', lineHeight: '1.5', whiteSpace: 'pre-wrap' }}>
                         {otherUser.bio || "No description provided."}
                     </p>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {deleteModalMsg && (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.7)', zIndex: 2100,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }} onClick={() => setDeleteModalMsg(null)}>
+            <div style={{
+                background: theme.cardBg, width: '90%', maxWidth: '360px',
+                borderRadius: '12px', padding: '1rem', color: theme.text
+            }} onClick={e => e.stopPropagation()}>
+                <h3 style={{ marginTop: 0 }}>Delete message?</h3>
+                {deleteModalMsg.senderId === user.id && canEdit(deleteModalMsg) && (
+                    <div style={{ color: theme.primary, cursor: 'pointer', padding: '8px 0' }}
+                        onClick={() => { deleteOwnMessage(deleteModalMsg); setDeleteModalMsg(null); }}>
+                        Delete for Everyone
+                    </div>
+                )}
+                <div style={{ color: theme.primary, cursor: 'pointer', padding: '8px 0' }}
+                    onClick={() => { deleteForMe(deleteModalMsg); setDeleteModalMsg(null); }}>
+                    Delete for Me
+                </div>
+                <div style={{ color: theme.subText, cursor: 'pointer', padding: '8px 0' }}
+                    onClick={() => setDeleteModalMsg(null)}>
+                    Cancel
                 </div>
             </div>
         </div>

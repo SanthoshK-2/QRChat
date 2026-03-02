@@ -3,7 +3,7 @@ import AuthContext from '../context/AuthContext';
 import { SERVER_URL } from '../config';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaLock } from 'react-icons/fa';
 
 // --- Styled Components ---
 const Toast = styled.div`
@@ -55,6 +55,16 @@ const Title = styled.h2`
   text-align: center;
   margin-bottom: 1.5rem;
   color: ${({ theme }) => theme.headerText};
+`;
+
+const SecureBanner = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: ${({ theme }) => theme.subText};
+  font-size: 0.9rem;
 `;
 
 const Input = styled.input`
@@ -201,6 +211,9 @@ const Login = () => {
       {toast && <Toast type={toast.type}>{toast.message}</Toast>}
       <Card>
         <Title>{isLogin ? 'Welcome Back' : 'Create Account'}</Title>
+        <SecureBanner>
+          <FaLock color="#16a34a" /> End‑to‑End Encrypted
+        </SecureBanner>
         <form onSubmit={handleSubmit}>
           <Input 
             type="text" 
