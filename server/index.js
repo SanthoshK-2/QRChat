@@ -224,6 +224,7 @@ app.set('io', io);
 
 const onlineUsers = new Map(); 
 const activeSessions = new Map(); // userId -> UsageSession id
+const activeCalls = new Map(); // key "caller|receiver" -> { callerId, receiverId, type, startedAt, accepted }
 
 const emitAdminOnline = async () => {
     try {

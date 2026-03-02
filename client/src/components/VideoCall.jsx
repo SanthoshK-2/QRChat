@@ -179,6 +179,7 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
   
   const myVideo = useRef();
   const userVideo = useRef();
+  const remoteAudio = useRef();
   const connectionRef = useRef();
   const streamRef = useRef();
   const startTime = useRef(null);
@@ -256,6 +257,14 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
         userVideo.current.onloadedmetadata = () => {
             userVideo.current.play().catch(e => console.error("Remote video auto-play failed:", e));
         };
+        // Mirror audio element to ensure audio plays even if video autoplay is blocked
+        if (remoteAudio.current) {
+            remoteAudio.current.srcObject = remoteStream;
+            remoteAudio.current.autoplay = true;
+            remoteAudio.current.muted = false;
+            const playAudio = () => remoteAudio.current.play().catch(err => console.error('Remote audio play failed:', err));
+            if (remoteAudio.current.readyState >= 2) playAudio(); else remoteAudio.current.oncanplay = playAudio;
+        }
     }
   }, [remoteStream, callAccepted]); // Re-run when stream arrives or UI switches to call mode
 
@@ -328,6 +337,9 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
       if (userVideo.current) {
           userVideo.current.muted = !isMutedSpeaker;
           setIsMutedSpeaker(!isMutedSpeaker);
+      }
+      if (remoteAudio.current) {
+          remoteAudio.current.muted = userVideo.current ? userVideo.current.muted : !isMutedSpeaker;
       }
   };
 
@@ -690,6 +702,7 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
                  */}
                 <StyledVideo playsInline ref={userVideo} autoPlay />
                 <span style={{ position: 'absolute', bottom: 10, left: 10, color: 'white', background: 'rgba(0,0,0,0.5)', padding: '2px 5px', borderRadius: 4 }}>{otherUserName || 'Remote'}</span>
+                <audio ref={remoteAudio} style={{ display: 'none' }} />
             </div>
         ) : (
              /* Show Remote Avatar while calling/connecting */
