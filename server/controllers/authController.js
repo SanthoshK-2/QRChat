@@ -91,6 +91,17 @@ exports.register = async (req, res) => {
              // DEMO LOGGING
              logToDemoFile(`NEW REGISTRATION: Username=${username}, Email=${email}, ID=${user.id}`);
              
+             try {
+               const io = req.app.get('io');
+               if (io) {
+                 const [localCount, globalCount] = await Promise.all([
+                   User.count({ where: { mode: 'local' } }),
+                   User.count({ where: { mode: 'global' } })
+                 ]);
+                 io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount });
+               }
+             } catch {}
+             
              res.status(201).json({
                  id: user.id,
                  username: user.username,
@@ -329,6 +340,19 @@ exports.updateProfile = async (req, res) => {
         }
         
         await user.save();
+        
+        try {
+          if (req.body.mode) {
+            const io = req.app.get('io');
+            if (io) {
+              const [localCount, globalCount] = await Promise.all([
+                User.count({ where: { mode: 'local' } }),
+                User.count({ where: { mode: 'global' } })
+              ]);
+              io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount });
+            }
+          }
+        } catch {}
         res.json({
             id: user.id,
             username: user.username,
@@ -569,6 +593,16 @@ exports.getAllUsers = async (req, res) => {
 exports.deleteUser = async (req, res) => {
     try {
         await User.destroy({ where: { id: req.params.id } });
+        try {
+          const io = req.app.get('io');
+          if (io) {
+            const [localCount, globalCount] = await Promise.all([
+              User.count({ where: { mode: 'local' } }),
+              User.count({ where: { mode: 'global' } })
+            ]);
+            io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount });
+          }
+        } catch {}
         res.json({ message: 'User deleted' });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });

@@ -233,6 +233,16 @@ const emitAdminOnline = async () => {
     } catch {}
 };
 
+const emitAdminUserCounts = async () => {
+    try {
+        const [localCount, globalCount] = await Promise.all([
+            User.count({ where: { mode: 'local' } }),
+            User.count({ where: { mode: 'global' } })
+        ]);
+        io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount });
+    } catch {}
+};
+
 const broadcastStatus = async (userId, isOnline) => {
     try {
         const blocks = await BlockList.findAll({
@@ -271,6 +281,7 @@ io.on('connection', (socket) => {
   socket.on('admin_join', () => {
     socket.join('admins');
     emitAdminOnline();
+    emitAdminUserCounts();
   });
 
   socket.on('join_room', async (userId) => {

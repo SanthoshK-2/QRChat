@@ -207,3 +207,16 @@ exports.getOnline = async (req, res) => {
     res.status(500).json({ message: 'Error fetching online count' });
   }
 };
+
+exports.getUserCounts = async (req, res) => {
+  try {
+    const [localCount, globalCount] = await Promise.all([
+      User.count({ where: { mode: 'local' } }),
+      User.count({ where: { mode: 'global' } })
+    ]);
+    res.json({ local: localCount, global: globalCount });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: 'Error fetching user counts' });
+  }
+};

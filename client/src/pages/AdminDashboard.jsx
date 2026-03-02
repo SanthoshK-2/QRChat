@@ -59,6 +59,8 @@ const AdminDashboard = () => {
   const [usage, setUsage] = useState([]);
   const [calls, setCalls] = useState([]);
   const [online, setOnline] = useState(0);
+  const [localCount, setLocalCount] = useState(0);
+  const [globalCount, setGlobalCount] = useState(0);
   const [range, setRange] = useState('week'); // day | week | month | custom
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
@@ -83,6 +85,10 @@ const AdminDashboard = () => {
     s.on('admin_online_update', (data) => {
       if (typeof data?.online === 'number') setOnline(data.online);
     });
+    s.on('admin_user_counts', (data) => {
+      if (typeof data?.local === 'number') setLocalCount(data.local || 0);
+      if (typeof data?.global === 'number') setGlobalCount(data.global || 0);
+    });
     s.on('admin_usage_update', () => {
       fetchData();
       if (detail?.user?.id) {
@@ -104,16 +110,19 @@ const AdminDashboard = () => {
           q.set('start', start);
           q.set('end', end);
         }
-        const [uRes, usageRes, callsRes, onlineRes] = await Promise.all([
+    const [uRes, usageRes, callsRes, onlineRes, countsRes] = await Promise.all([
           api.get('/auth/all-users'),
           api.get('/admin/usage/users?' + q.toString()),
           api.get('/admin/usage/calls?' + q.toString()),
-          api.get('/admin/online')
+          api.get('/admin/online'),
+          api.get('/admin/users/counts')
         ]);
         setUsers(uRes.data);
         setUsage(usageRes.data || []);
         setCalls(callsRes.data || []);
         setOnline(onlineRes.data?.online || 0);
+        setLocalCount(countsRes.data?.local || 0);
+        setGlobalCount(countsRes.data?.global || 0);
         setLoading(false);
     } catch (e) {
         console.error(e);
@@ -213,6 +222,8 @@ const AdminDashboard = () => {
         <h1>Admin Dashboard</h1>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span>Online now: <strong>{online}</strong></span>
+          <span>Local: <strong>{localCount}</strong></span>
+          <span>Global: <strong>{globalCount}</strong></span>
           <Button onClick={logout} style={{ background: '#333' }}>Logout</Button>
         </div>
       </Header>

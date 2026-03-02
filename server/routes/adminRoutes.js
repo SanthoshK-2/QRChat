@@ -16,5 +16,6 @@ router.get('/users/:userId', protect, adminOnly, adminController.getUserDetail);
 router.get('/export/usage.csv', protect, adminOnly, adminController.exportUsageCsv);
 router.get('/export/calls.csv', protect, adminOnly, adminController.exportCallsCsv);
 router.get('/online', protect, adminOnly, adminController.getOnline);
+router.get('/users/counts', protect, adminOnly, adminController.getUserCounts);
 
 module.exports = router;
