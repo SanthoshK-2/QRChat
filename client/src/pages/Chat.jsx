@@ -831,8 +831,9 @@ const Chat = () => {
             style={{ cursor: 'pointer' }}
           >
             {(msg.type === 'deleted' || msg.deletedAt) && (
-                <div style={{ fontStyle: 'italic', color: theme.subText, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ opacity: 0.8 }}>{msg.content || 'This message was deleted'}</span>
+                <div style={{ fontStyle: 'italic', color: theme.subText, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FaBan size={14} style={{ opacity: 0.7 }} />
+                    <span style={{ opacity: 0.85 }}>{msg.content || 'This message was deleted'}</span>
                 </div>
             )}
             {msg.type === 'text' && !msg.deletedAt && (
