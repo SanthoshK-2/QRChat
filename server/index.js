@@ -239,7 +239,7 @@ const emitAdminUserCounts = async () => {
             User.count({ where: { mode: 'local' } }),
             User.count({ where: { mode: 'global' } })
         ]);
-        io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount });
+        io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount, total: (localCount + globalCount) });
     } catch {}
 };
 

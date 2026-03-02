@@ -98,7 +98,7 @@ exports.register = async (req, res) => {
                    User.count({ where: { mode: 'local' } }),
                    User.count({ where: { mode: 'global' } })
                  ]);
-                 io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount });
+                 io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount, total: (localCount + globalCount) });
                }
              } catch {}
              
@@ -349,7 +349,7 @@ exports.updateProfile = async (req, res) => {
                 User.count({ where: { mode: 'local' } }),
                 User.count({ where: { mode: 'global' } })
               ]);
-              io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount });
+              io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount, total: (localCount + globalCount) });
             }
           }
         } catch {}
@@ -600,7 +600,7 @@ exports.deleteUser = async (req, res) => {
               User.count({ where: { mode: 'local' } }),
               User.count({ where: { mode: 'global' } })
             ]);
-            io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount });
+            io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount, total: (localCount + globalCount) });
           }
         } catch {}
         res.json({ message: 'User deleted' });

@@ -214,7 +214,7 @@ exports.getUserCounts = async (req, res) => {
       User.count({ where: { mode: 'local' } }),
       User.count({ where: { mode: 'global' } })
     ]);
-    res.json({ local: localCount, global: globalCount });
+    res.json({ local: localCount, global: globalCount, total: (localCount + globalCount) });
   } catch (e) {
     console.error(e);
     res.status(500).json({ message: 'Error fetching user counts' });

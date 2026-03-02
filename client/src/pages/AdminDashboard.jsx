@@ -61,6 +61,7 @@ const AdminDashboard = () => {
   const [online, setOnline] = useState(0);
   const [localCount, setLocalCount] = useState(0);
   const [globalCount, setGlobalCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [range, setRange] = useState('week'); // day | week | month | custom
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
@@ -88,6 +89,7 @@ const AdminDashboard = () => {
     s.on('admin_user_counts', (data) => {
       if (typeof data?.local === 'number') setLocalCount(data.local || 0);
       if (typeof data?.global === 'number') setGlobalCount(data.global || 0);
+      if (typeof data?.total === 'number') setTotalCount(data.total || 0);
     });
     s.on('admin_usage_update', () => {
       fetchData();
@@ -143,6 +145,7 @@ const AdminDashboard = () => {
       const countsRes = await api.get('/admin/users/counts');
       setLocalCount(countsRes.data?.local || 0);
       setGlobalCount(countsRes.data?.global || 0);
+      setTotalCount(countsRes.data?.total || ((countsRes.data?.local || 0) + (countsRes.data?.global || 0)));
       anyOk = true;
     } catch (e) {
       console.warn('Load counts failed', e?.response?.status || e?.message);
@@ -246,6 +249,7 @@ const AdminDashboard = () => {
           <span>Online now: <strong>{online}</strong></span>
           <span>Local: <strong>{localCount}</strong></span>
           <span>Global: <strong>{globalCount}</strong></span>
+          <span>Total: <strong>{totalCount}</strong></span>
           <Button onClick={logout} style={{ background: '#333' }}>Logout</Button>
         </div>
       </Header>
