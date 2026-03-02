@@ -228,6 +228,8 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showChatSearch, setShowChatSearch] = useState(false);
+  const [chatSearchQuery, setChatSearchQuery] = useState('');
 
   useEffect(() => {
     if (!socket) return;
@@ -515,12 +517,30 @@ const Dashboard = () => {
 
       {activeTab === 'chats' && (
           <Section>
-            <h3>Connected Users</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3>Connected Users</h3>
+              <IconButton onClick={() => setShowChatSearch(s => !s)} title="Search Connected">
+                <FaSearch />
+              </IconButton>
+            </div>
+            {showChatSearch && (
+              <Input
+                placeholder="Search connected users"
+                value={chatSearchQuery}
+                onChange={(e) => setChatSearchQuery(e.target.value)}
+              />
+            )}
             {chats.length === 0 ? (
                 <p>No connected users</p>
             ) : (
                 <UserList>
-                    {chats.map(chatItem => {
+                    {chats
+                      .filter(ci => {
+                        if (!chatSearchQuery.trim()) return true;
+                        const name = (ci.user?.username || '').toLowerCase();
+                        return name.includes(chatSearchQuery.trim().toLowerCase());
+                      })
+                      .map(chatItem => {
                         const chatUser = chatItem.user;
                         const lastMsg = chatItem.lastMessage;
                         const lastMsgType = chatItem.lastMessageType;
