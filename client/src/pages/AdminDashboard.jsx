@@ -92,13 +92,18 @@ const AdminDashboard = () => {
       if (typeof data?.total === 'number') setTotalCount(data.total || 0);
     });
     s.on('admin_usage_update', () => {
-      fetchData();
+      // refresh only usage table and detail usage if open
+      fetchUsage();
       if (detail?.user?.id) {
         api.get(`/admin/users/${detail.user.id}`).then(res => setDetail(res.data)).catch(() => {});
       }
     });
     s.on('admin_calls_update', () => {
-      fetchData();
+      // refresh only calls table and detail calls if open
+      fetchCalls();
+      if (detail?.user?.id) {
+        api.get(`/admin/users/${detail.user.id}`).then(res => setDetail(res.data)).catch(() => {});
+      }
     });
     return () => s.close();
   }, [detail?.user?.id, range, start, end]);
@@ -120,20 +125,7 @@ const AdminDashboard = () => {
     } catch (e) {
       console.warn('Load users failed', e?.response?.status || e?.message);
     }
-    try {
-      const usageRes = await api.get('/admin/usage/users?' + q.toString());
-      setUsage(usageRes.data || []);
-      anyOk = true;
-    } catch (e) {
-      console.warn('Load usage failed', e?.response?.status || e?.message);
-    }
-    try {
-      const callsRes = await api.get('/admin/usage/calls?' + q.toString());
-      setCalls(callsRes.data || []);
-      anyOk = true;
-    } catch (e) {
-      console.warn('Load calls failed', e?.response?.status || e?.message);
-    }
+    await Promise.allSettled([fetchUsage(true), fetchCalls(true)]);
     try {
       const onlineRes = await api.get('/admin/online');
       setOnline(onlineRes.data?.online || 0);
@@ -156,28 +148,37 @@ const AdminDashboard = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    const t = setInterval(async () => {
-      try {
-        const res = await api.get('/admin/online');
-        setOnline(res.data?.online || 0);
-      } catch {}
-    }, 15000);
-    return () => clearInterval(t);
-  }, []);
+  const fetchUsage = async (silent = false) => {
+    const q = new URLSearchParams();
+    if (range) q.set('range', range);
+    if (range === 'custom' && start && end) {
+      q.set('start', start);
+      q.set('end', end);
+    }
+    try {
+      const usageRes = await api.get('/admin/usage/users?' + q.toString());
+      setUsage(usageRes.data || []);
+    } catch (e) {
+      if (!silent) console.warn('Load usage failed', e?.response?.status || e?.message);
+    }
+  };
+  
+  const fetchCalls = async (silent = false) => {
+    const q = new URLSearchParams();
+    if (range) q.set('range', range);
+    if (range === 'custom' && start && end) {
+      q.set('start', start);
+      q.set('end', end);
+    }
+    try {
+      const callsRes = await api.get('/admin/usage/calls?' + q.toString());
+      setCalls(callsRes.data || []);
+    } catch (e) {
+      if (!silent) console.warn('Load calls failed', e?.response?.status || e?.message);
+    }
+  };
 
-  // Poll usage and calls regularly to reflect near‑real‑time state
-  useEffect(() => {
-    const t = setInterval(() => {
-      fetchData();
-      if (detail?.user?.id) {
-        api.get(`/admin/users/${detail.user.id}`)
-          .then(res => setDetail(res.data))
-          .catch(() => {});
-      }
-    }, 15000);
-    return () => clearInterval(t);
-  }, [range, start, end, detail?.user?.id]);
+  // Remove periodic polling; rely purely on socket updates and manual range changes
 
   const exportUsage = async () => {
     const q = new URLSearchParams();
