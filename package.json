@@ -9,8 +9,8 @@
     "server": "node server/index.js",
     "start": "node server/index.js",
     "install-all": "npm install --prefix client && npm install --prefix server",
-    "postinstall": "echo \"postinstall skipped; handled in build\"",
-    "build": "node scripts/build_and_deploy.js"
+    "postinstall": "npm ci --prefix client && npm ci --prefix server || true",
+    "build": "npm run build --prefix client && node scripts/deploy.js"
   },
   "dependencies": {
     "axios": "^1.13.5",
