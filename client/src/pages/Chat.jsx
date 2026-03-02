@@ -287,12 +287,16 @@ const Chat = () => {
         const { data } = await api.get(`/chat/${otherUserId}`);
         const hidden = loadHidden();
         const decryptedMessages = data
-          .filter(msg => !msg.deletedAt)
           .filter(msg => !hidden.has(msg.id))
-          .map(msg => ({
-            ...msg,
-            content: msg.type === 'text' ? decryptMessage(msg.content) : msg.content
-          }));
+          .map(msg => {
+            if (msg.deletedAt) {
+              return { ...msg, type: 'deleted', content: 'This Message is Deleted by User' };
+            }
+            return { 
+              ...msg,
+              content: msg.type === 'text' ? decryptMessage(msg.content) : msg.content
+            };
+          });
         setMessages(decryptedMessages);
 
         if (socket && otherUserId) {
@@ -361,7 +365,7 @@ const Chat = () => {
       });
       
       socket.on('message_deleted', (messageId) => {
-        setMessages(prev => prev.filter(m => m.id !== messageId));
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, type: 'deleted', content: 'This Message is Deleted by User', deletedAt: new Date().toISOString() } : m));
       });
       
       // call_user listener moved to CallContext
@@ -673,7 +677,7 @@ const Chat = () => {
   const deleteOwnMessage = async (msg) => {
     try {
       await api.delete(`/chat/${msg.id}`);
-      setMessages(prev => prev.filter(m => m.id !== msg.id));
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, type: 'deleted', content: 'This Message is Deleted by User', deletedAt: new Date().toISOString() } : m));
       if (socket) {
         socket.emit('delete_message', { messageId: msg.id, senderId: msg.senderId, receiverId: msg.receiverId });
       }
@@ -821,13 +825,18 @@ const Chat = () => {
             }}
             style={{ cursor: 'pointer' }}
           >
-            {msg.type === 'text' && (
+            {(msg.type === 'deleted' || msg.deletedAt) && (
+                <div style={{ fontStyle: 'italic', color: theme.subText }}>
+                    This Message is Deleted by User
+                </div>
+            )}
+            {msg.type === 'text' && !msg.deletedAt && (
                 <div>
                     {msg.content}
                     {msg.isEdited && <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.7)', marginLeft: '5px', fontStyle: 'italic' }}>(Edited)</span>}
                 </div>
             )}
-            {msg.type === 'image' && (
+            {msg.type === 'image' && !msg.deletedAt && (
                 <div style={{position:'relative'}}>
                     <img src={`${SERVER_URL}${msg.fileUrl}`} alt="shared" style={{ maxWidth: '100%', borderRadius: 8 }} />
                     <div style={{position:'absolute', bottom:5, right:5, background:'rgba(0,0,0,0.5)', borderRadius:'50%', padding:5, cursor:'pointer'}} onClick={(e) => { e.stopPropagation(); downloadFile(msg.fileUrl, msg.fileName); }}>
@@ -835,20 +844,20 @@ const Chat = () => {
                     </div>
                 </div>
             )}
-            {msg.type === 'file' && <a href={`${SERVER_URL}${msg.fileUrl}`} target="_blank" rel="noopener noreferrer" style={{color: 'inherit'}}>{msg.fileName}</a>}
-            {msg.type === 'audio' && (
+            {msg.type === 'file' && !msg.deletedAt && <a href={`${SERVER_URL}${msg.fileUrl}`} target="_blank" rel="noopener noreferrer" style={{color: 'inherit'}}>{msg.fileName}</a>}
+            {msg.type === 'audio' && !msg.deletedAt && (
                 <div style={{ width: '100%', minWidth: '250px' }}>
                     <CustomAudioPlayer src={`${SERVER_URL}${msg.fileUrl}`} fileName={msg.fileName} />
                 </div>
             )}
-            {msg.type === 'video' && (
+            {msg.type === 'video' && !msg.deletedAt && (
                 <div style={{position:'relative'}}>
                     <video controls src={`${SERVER_URL}${msg.fileUrl}`} style={{ maxWidth: '100%', borderRadius: 8 }} />
                 </div>
             )}
             
             {/* Action Bar for Selected Message */}
-            {selectedMessageId === msg.id && (
+            {selectedMessageId === msg.id && msg.type !== 'deleted' && !msg.deletedAt && (
               <div style={{ marginTop: 6, display: 'flex', gap: 8, justifyContent: 'flex-end', background: 'rgba(0,0,0,0.1)', padding: '4px', borderRadius: '4px' }}>
                 <ActionButton onClick={(e) => { e.stopPropagation(); shareMessage(msg); }} title="Share"><FaShare/></ActionButton>
                 {(msg.type === 'image' || msg.type === 'video' || msg.type === 'audio' || msg.type === 'file') && (

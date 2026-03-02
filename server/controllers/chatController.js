@@ -10,8 +10,7 @@ exports.getMessages = async (req, res) => {
                 [Op.or]: [
                     { senderId: req.user.id, receiverId: otherUserId },
                     { senderId: otherUserId, receiverId: req.user.id }
-                ],
-                deletedAt: null
+                ]
             },
             include: [{ model: User, as: 'Sender', attributes: ['id', 'username', 'profilePic'] }],
             order: [['createdAt', 'ASC']]
@@ -27,7 +26,7 @@ exports.getGroupMessages = async (req, res) => {
     
     try {
         const messages = await Message.findAll({
-            where: { groupId, deletedAt: null },
+            where: { groupId },
             include: [{ model: User, as: 'Sender', attributes: ['id', 'username', 'profilePic'] }],
             order: [['createdAt', 'ASC']]
         });
