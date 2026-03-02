@@ -58,17 +58,13 @@ const Title = styled.h2`
 `;
 
 const SecureFooter = styled.div`
-  position: fixed;
-  left: 50%;
-  bottom: 20px;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 8px;
   justify-content: center;
   color: ${({ theme }) => theme.subText};
   font-size: 0.9rem;
-  z-index: 1000;
+  margin-bottom: 1rem;
 `;
 
 const Input = styled.input`
@@ -216,6 +212,9 @@ const Login = () => {
       {toast && <Toast type={toast.type}>{toast.message}</Toast>}
       <Card>
         <Title>{isLogin ? 'Welcome Back' : 'Create Account'}</Title>
+        <SecureFooter>
+          <FaLock color="#16a34a" /> End‑to‑End Encrypted
+        </SecureFooter>
         <form onSubmit={handleSubmit}>
           <Input 
             type="text" 
@@ -272,9 +271,6 @@ const Login = () => {
         </ToggleText>
       </Card>
     </Container>
-    <SecureFooter>
-      <FaLock color="#16a34a" /> End‑to‑End Encrypted
-    </SecureFooter>
     </>
   );
 };
