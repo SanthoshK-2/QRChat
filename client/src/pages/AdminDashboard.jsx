@@ -1,9 +1,11 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import api from '../utils/api';
 import io from 'socket.io-client';
 import { SERVER_URL } from '../config';
+import { ThemeContext } from '../context/ThemeContext';
+import { FaMoon, FaSun } from 'react-icons/fa';
 
 const Container = styled.div`
   padding: 2rem;
@@ -55,6 +57,7 @@ const Button = styled.button`
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const { isDarkMode, toggleTheme } = useContext(ThemeContext);
   const [users, setUsers] = useState([]);
   const [usage, setUsage] = useState([]);
   const [calls, setCalls] = useState([]);
@@ -251,6 +254,21 @@ const AdminDashboard = () => {
           <span>Local: <strong>{localCount}</strong></span>
           <span>Global: <strong>{globalCount}</strong></span>
           <span>Total: <strong>{totalCount}</strong></span>
+          <button 
+            onClick={toggleTheme} 
+            title={isDarkMode ? 'Switch to Light' : 'Switch to Dark'} 
+            style={{ 
+              background: 'none', 
+              border: `1px solid ${isDarkMode ? '#555' : '#ccc'}`, 
+              borderRadius: 6, 
+              padding: '6px 10px', 
+              color: 'inherit',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+            {isDarkMode ? <FaSun /> : <FaMoon />} {isDarkMode ? 'Light' : 'Dark'}
+          </button>
           <Button onClick={logout} style={{ background: '#333' }}>Logout</Button>
         </div>
       </Header>

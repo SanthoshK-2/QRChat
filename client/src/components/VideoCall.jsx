@@ -530,10 +530,10 @@ const VideoCall = ({ otherUserId, otherUserName, isCaller, callType, incomingCal
   // Listen for end call
   useEffect(() => {
       if(socket) {
-          socket.on('end_call', () => {
+          socket.on('call_ended', () => {
               onClose();
           });
-          return () => socket.off('end_call');
+          return () => socket.off('call_ended');
       }
   }, [socket, onClose]);
 

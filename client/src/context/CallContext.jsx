@@ -38,11 +38,11 @@ export const CallProvider = ({ children }) => {
         };
 
         socket.on('call_user', handleIncomingCall);
-        socket.on('end_call', handleEndCall);
+        socket.on('call_ended', handleEndCall);
 
         return () => {
             socket.off('call_user', handleIncomingCall);
-            socket.off('end_call', handleEndCall);
+            socket.off('call_ended', handleEndCall);
         };
     }, [socket, callState]);
 
