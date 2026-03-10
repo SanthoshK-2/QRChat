@@ -485,12 +485,22 @@ const Dashboard = () => {
               style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.inputBg, color: theme.text }}
             />
           </div>
+          <div style={{ display: 'flex', gap: 8, padding: '0 0.75rem 0.75rem' }}>
+            <button onClick={() => setChatFilter('all')} style={{ background: chatFilter==='all' ? theme.primary : 'transparent', color: chatFilter==='all' ? 'white' : theme.text, border: `1px solid ${theme.border}`, borderRadius: 6, padding: '6px 10px' }}>All</button>
+            <button onClick={() => setChatFilter('unread')} style={{ background: chatFilter==='unread' ? theme.primary : 'transparent', color: chatFilter==='unread' ? 'white' : theme.text, border: `1px solid ${theme.border}`, borderRadius: 6, padding: '6px 10px' }}>Unread</button>
+            <button onClick={() => setChatFilter('fav')} style={{ background: chatFilter==='fav' ? theme.primary : 'transparent', color: chatFilter==='fav' ? 'white' : theme.text, border: `1px solid ${theme.border}`, borderRadius: 6, padding: '6px 10px' }}>Favourites</button>
+          </div>
           <div>
             {chats
               .filter(ci => {
                 if (!chatSearchQuery.trim()) return true;
                 const name = (ci.user?.username || '').toLowerCase();
                 return name.includes(chatSearchQuery.trim().toLowerCase());
+              })
+              .filter(ci => {
+                if (chatFilter === 'unread') return (ci.unreadCount || 0) > 0;
+                if (chatFilter === 'fav') return favs.has(ci.user?.id);
+                return true;
               })
               .map(chatItem => {
                 const chatUser = chatItem.user;
@@ -687,7 +697,15 @@ const Dashboard = () => {
                                 <Avatar user={chatUser} size="40px" />
                                 <div style={{ flex: 1, overflow: 'hidden' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <div style={{ fontWeight: 'bold' }}>{chatUser.username}</div>
+                                        <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            {chatUser.username}
+                                            <FaStar 
+                                              onClick={(e) => { e.stopPropagation(); toggleFav(chatUser.id); }} 
+                                              color={favs.has(chatUser.id) ? '#f59e0b' : theme.subText} 
+                                              style={{ cursor: 'pointer' }} 
+                                              title="Toggle favourite" 
+                                            />
+                                        </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                             {lastMsgAt && <div style={{ fontSize: '0.7rem', color: theme.subText }}>{new Date(lastMsgAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>}
                                             {unreadCount > 0 && (

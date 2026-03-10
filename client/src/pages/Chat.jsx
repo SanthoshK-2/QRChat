@@ -62,6 +62,12 @@ const MessageList = styled.div`
   display: flex;
   flex-direction: column;
   -webkit-overflow-scrolling: touch;
+  background-image: ${props => props.wallpaper ? `
+    radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)
+  ` : 'none'};
+  background-position: ${props => props.wallpaper ? '0 0, 25px 25px' : 'initial'};
+  background-size: ${props => props.wallpaper ? '50px 50px' : 'initial'};
 `;
 
 const MessageBubble = styled.div`
@@ -132,7 +138,7 @@ const ActionButton = styled.button`
     }
 `;
 
-const Chat = ({ overrideOtherUserId }) => {
+const Chat = ({ overrideOtherUserId, variant }) => {
   const params = useParams();
   const otherUserId = overrideOtherUserId || params.userId;
   const { user } = useContext(AuthContext);
@@ -754,7 +760,7 @@ const Chat = ({ overrideOtherUserId }) => {
       
       <Header>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-            <FaArrowLeft onClick={() => navigate('/')} style={{ cursor: 'pointer', marginRight: '1rem' }} />
+            {variant !== 'desktop' && <FaArrowLeft onClick={() => navigate('/')} style={{ cursor: 'pointer', marginRight: '1rem' }} />}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => setShowProfileModal(true)}>
                 {otherUser && <Avatar user={otherUser} size="40px" />}
                 <div>
@@ -820,7 +826,7 @@ const Chat = ({ overrideOtherUserId }) => {
         </div>
       </Header>
 
-      <MessageList>
+      <MessageList wallpaper={variant === 'desktop'}>
         {messages.map((msg, index) => (
           <MessageBubble 
             key={index} 
