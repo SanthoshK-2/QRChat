@@ -237,21 +237,7 @@ const Dashboard = () => {
   });
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [chatFilter, setChatFilter] = useState('all');
-  const [favs, setFavs] = useState(() => {
-    try {
-      const raw = localStorage.getItem('favorites');
-      const arr = raw ? JSON.parse(raw) : [];
-      return new Set(arr);
-    } catch { return new Set(); }
-  });
-  const toggleFav = (id) => {
-    setFavs(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      try { localStorage.setItem('favorites', JSON.stringify(Array.from(next))); } catch {}
-      return next;
-    });
-  };
+
   const isDesktopMode = !isMobile || desktopSite;
   useEffect(() => { try { localStorage.setItem('desktopSite', desktopSite ? 'true' : 'false'); } catch {} }, [desktopSite]);
 
@@ -485,7 +471,7 @@ const Dashboard = () => {
     return (
       <div style={{ display: 'flex', height: '100vh', background: theme.body }}>
         <div style={{ width: 60, borderRight: `1px solid ${theme.border}`, background: theme.sectionBackground, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 8 }}>
-          <IconButton title="Chats" onClick={() => { /* default */ }}>
+          <IconButton title="Chats" onClick={() => setActiveTab('chats')}>
             <FaUser />
           </IconButton>
           <IconButton title="Calls" onClick={() => setActiveTab('calls')}>
@@ -498,6 +484,7 @@ const Dashboard = () => {
             <FaCog />
           </IconButton>
         </div>
+        {activeTab === 'chats' && (
         <div style={{ width: 360, borderRight: `1px solid ${theme.border}`, overflowY: 'auto', background: theme.sectionBackground }}>
           <div style={{ padding: '1rem', borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h3 style={{ margin: 0, color: theme.text }}>Chats</h3>
@@ -518,7 +505,6 @@ const Dashboard = () => {
           <div style={{ display: 'flex', gap: 8, padding: '0 0.75rem 0.75rem' }}>
             <button onClick={() => setChatFilter('all')} style={{ background: chatFilter==='all' ? theme.primary : 'transparent', color: chatFilter==='all' ? 'white' : theme.text, border: `1px solid ${theme.border}`, borderRadius: 6, padding: '6px 10px' }}>All</button>
             <button onClick={() => setChatFilter('unread')} style={{ background: chatFilter==='unread' ? theme.primary : 'transparent', color: chatFilter==='unread' ? 'white' : theme.text, border: `1px solid ${theme.border}`, borderRadius: 6, padding: '6px 10px' }}>Unread</button>
-            <button onClick={() => setChatFilter('fav')} style={{ background: chatFilter==='fav' ? theme.primary : 'transparent', color: chatFilter==='fav' ? 'white' : theme.text, border: `1px solid ${theme.border}`, borderRadius: 6, padding: '6px 10px' }}>Favourites</button>
           </div>
           <div>
             {chats
@@ -529,7 +515,6 @@ const Dashboard = () => {
               })
               .filter(ci => {
                 if (chatFilter === 'unread') return (ci.unreadCount || 0) > 0;
-                if (chatFilter === 'fav') return favs.has(ci.user?.id);
                 return true;
               })
               .map(chatItem => {
@@ -555,7 +540,16 @@ const Dashboard = () => {
                 }
                 return (
                   <div key={chatUser.id} 
-                       onClick={() => setSelectedChatId(chatUser.id)} 
+                       onClick={() => {
+                        setSelectedChatId(chatUser.id);
+                        // Reset unread count on click
+                        const index = chats.findIndex(c => c.user.id === chatUser.id);
+                        if (index > -1) {
+                          const newChats = [...chats];
+                          newChats[index].unreadCount = 0;
+                          setChats(newChats);
+                        }
+                       }} 
                        style={{ padding: '0.6rem 0.8rem', cursor: 'pointer', borderBottom: `1px solid ${theme.border}`, background: selectedChatId===chatUser.id ? theme.hover : 'transparent' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
                       <Avatar user={chatUser} size="40px" />
@@ -594,14 +588,76 @@ const Dashboard = () => {
               })}
           </div>
         </div>
+        )}
+        {activeTab === 'calls' && (
+          <div style={{ width: 360, borderRight: `1px solid ${theme.border}`, overflowY: 'auto', background: theme.sectionBackground }}>
+            <div style={{ padding: '1rem', borderBottom: `1px solid ${theme.border}` }}>
+              <h3 style={{ margin: 0, color: theme.text }}>Call History</h3>
+            </div>
+            <UserList>
+              {callHistory.map(call => {
+                const isCaller = call.callerId === user.id;
+                const otherUser = isCaller ? call.Receiver : call.Caller;
+                const icon = call.type === 'video' ? <FaVideo /> : <FaMicrophone />;
+                const statusIcon = call.status === 'missed' ? <FaPhoneSlash color="red"/> : <FaPhone color="green"/>;
+                return (
+                  <UserItem key={call.id} style={{ cursor: 'default' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', width: '100%' }}>
+                      <Avatar user={otherUser} size="45px" />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{otherUser ? otherUser.username : 'Unknown'}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', color: theme.subText, marginTop: '2px' }}>
+                          {statusIcon}
+                          <span>{isCaller ? 'Outgoing' : 'Incoming'} {call.type} call</span>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>{new Date(call.createdAt).toLocaleDateString()}</div>
+                        <div style={{ fontSize: '0.7rem', color: theme.subText }}>{new Date(call.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                      </div>
+                    </div>
+                  </UserItem>
+                );
+              })}
+            </UserList>
+          </div>
+        )}
+        {activeTab === 'connect' && (
+          <div style={{ width: 360, borderRight: `1px solid ${theme.border}`, overflowY: 'auto', background: theme.sectionBackground, padding: '1rem' }}>
+            <h3 style={{ margin: 0, color: theme.text, marginBottom: '1rem' }}>Connect</h3>
+            <Button onClick={() => setShowScanner(true)}><FaQrcode /> Scan QR Code</Button>
+            <div style={{ margin: '1rem 0', textAlign: 'center', fontWeight: 'bold' }}>OR</div>
+            <Input placeholder="Enter Unique Number" value={connectCode} onChange={(e) => setConnectCode(e.target.value)} />
+            <Button onClick={handleConnect}><FaSearch /> Connect</Button>
+            <div style={{ margin: '1rem 0', textAlign: 'center', fontWeight: 'bold' }}>OR</div>
+            <Button onClick={() => setShowUserSearch(s => !s)} style={{ background: theme.secondary }}><FaSearch /> Search Global Users</Button>
+            {showUserSearch && (
+              <div style={{ marginTop: '1rem' }}>
+                <Input placeholder="Search Global Account by Username" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <div style={{ maxHeight: '40vh', overflowY: 'auto', border: `1px solid ${theme.border}`, borderRadius: 8 }}>
+                  {isSearching && <p style={{ padding: '0.75rem', color: theme.subText }}>Searching...</p>}
+                  {!isSearching && searchResults.length === 0 && searchQuery.trim() !== '' && (
+                    <p style={{ padding: '0.75rem', color: theme.subText }}>No global users found</p>
+                  )}
+                  {searchResults.map(u => (
+                    <div key={u.id} onClick={() => handleConnectToUser(u)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.75rem', cursor: 'pointer', borderBottom: `1px solid ${theme.border}` }}>
+                      <Avatar user={u} size="34px" />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 'bold' }}>{u.username}</div>
+                        <div style={{ fontSize: '0.8rem', color: theme.subText }}>{u.bio || 'Global account'}</div>
+                      </div>
+                      <span style={{ background: theme.primary, color: 'white', borderRadius: 6, padding: '4px 8px', fontSize: '0.75rem' }}>Connect</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: theme.body }}>
           {!selectedChatId ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.subText }}>
-              <div style={{ display: 'flex', gap: 20 }}>
-                <div style={{ background: theme.cardBg, padding: 20, borderRadius: 12, boxShadow: `0 2px 8px ${theme.shadow}` }}>Send document</div>
-                <div style={{ background: theme.cardBg, padding: 20, borderRadius: 12, boxShadow: `0 2px 8px ${theme.shadow}` }}>Add contact</div>
-                <div style={{ background: theme.cardBg, padding: 20, borderRadius: 12, boxShadow: `0 2px 8px ${theme.shadow}` }}>Ask Meta AI</div>
-              </div>
+              Select a chat to start messaging
             </div>
           ) : (
             <Chat overrideOtherUserId={selectedChatId} variant="desktop" />
@@ -729,12 +785,7 @@ const Dashboard = () => {
                                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                         <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 8 }}>
                                             {chatUser.username}
-                                            <FaStar 
-                                              onClick={(e) => { e.stopPropagation(); toggleFav(chatUser.id); }} 
-                                              color={favs.has(chatUser.id) ? '#f59e0b' : theme.subText} 
-                                              style={{ cursor: 'pointer' }} 
-                                              title="Toggle favourite" 
-                                            />
+
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                             {lastMsgAt && <div style={{ fontSize: '0.7rem', color: theme.subText }}>{new Date(lastMsgAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>}
