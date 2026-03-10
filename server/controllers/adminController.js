@@ -32,7 +32,7 @@ exports.getUsageByUser = async (req, res) => {
       attributes: [
         'userId',
         [sequelize.fn('SUM', sequelize.fn('COALESCE', sequelize.col('UsageSession.durationSeconds'), 0)), 'totalSeconds'],
-        [sequelize.fn('COUNT', sequelize.col('UsageSession.id')), 'sessions']
+        [sequelize.literal('COUNT(UsageSession.id)'), 'sessions']
       ],
       where,
       group: ['userId'],
@@ -64,7 +64,7 @@ exports.getCallDurations = async (req, res) => {
         'callerId',
         [sequelize.fn('SUM', sequelize.literal("CASE WHEN CallHistory.type='audio' THEN COALESCE(CallHistory.duration,0) ELSE 0 END")), 'audioSeconds'],
         [sequelize.fn('SUM', sequelize.literal("CASE WHEN CallHistory.type='video' THEN COALESCE(CallHistory.duration,0) ELSE 0 END")), 'videoSeconds'],
-        [sequelize.fn('COUNT', sequelize.col('CallHistory.id')), 'totalCalls']
+        [sequelize.literal('COUNT(CallHistory.id)'), 'totalCalls']
       ],
       where,
       group: ['callerId'],
@@ -127,7 +127,7 @@ exports.exportUsageCsv = async (req, res) => {
       attributes: [
         'userId',
         [sequelize.fn('SUM', sequelize.fn('COALESCE', sequelize.col('UsageSession.durationSeconds'), 0)), 'totalSeconds'],
-        [sequelize.fn('COUNT', sequelize.col('UsageSession.id')), 'sessions']
+        [sequelize.literal('COUNT(UsageSession.id)'), 'sessions']
       ],
       where,
       group: ['userId'],
@@ -172,7 +172,7 @@ exports.exportCallsCsv = async (req, res) => {
         'callerId',
         [sequelize.fn('SUM', sequelize.literal("CASE WHEN CallHistory.type='audio' THEN COALESCE(CallHistory.duration,0) ELSE 0 END")), 'audioSeconds'],
         [sequelize.fn('SUM', sequelize.literal("CASE WHEN CallHistory.type='video' THEN COALESCE(CallHistory.duration,0) ELSE 0 END")), 'videoSeconds'],
-        [sequelize.fn('COUNT', sequelize.col('CallHistory.id')), 'totalCalls']
+        [sequelize.literal('COUNT(CallHistory.id)'), 'totalCalls']
       ],
       where,
       group: ['callerId'],
