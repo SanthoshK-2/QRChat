@@ -468,6 +468,20 @@ const Dashboard = () => {
   if (isDesktopMode) {
     return (
       <div style={{ display: 'flex', height: '100vh', background: theme.body }}>
+        <div style={{ width: 60, borderRight: `1px solid ${theme.border}`, background: theme.sectionBackground, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 8 }}>
+          <IconButton title="Chats" onClick={() => { /* default */ }}>
+            <FaUser />
+          </IconButton>
+          <IconButton title="Calls" onClick={() => setActiveTab('calls')}>
+            <FaPhone />
+          </IconButton>
+          <IconButton title="Connect" onClick={() => setActiveTab('connect')}>
+            <FaQrcode />
+          </IconButton>
+          <IconButton title="Settings" onClick={() => navigate('/settings')}>
+            <FaCog />
+          </IconButton>
+        </div>
         <div style={{ width: 360, borderRight: `1px solid ${theme.border}`, overflowY: 'auto', background: theme.sectionBackground }}>
           <div style={{ padding: '1rem', borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h3 style={{ margin: 0, color: theme.text }}>Chats</h3>
@@ -574,7 +588,7 @@ const Dashboard = () => {
               </div>
             </div>
           ) : (
-            <Chat overrideOtherUserId={selectedChatId} />
+            <Chat overrideOtherUserId={selectedChatId} variant="desktop" />
           )}
         </div>
       </div>
