@@ -16,14 +16,15 @@ const Container = styled.div`
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 0;
   background-color: #1a1d21;
   min-height: 100vh;
   color: white;
+  display: flex;
+  flex-direction: column;
   
   @media (max-width: 768px) {
     max-width: 100%;
-    padding: 0.5rem;
   }
 `;
 
@@ -31,58 +32,69 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  padding: 1.25rem 1rem;
   background: #1a1d21;
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
 `;
 
 const Title = styled.h2`
   color: #1890ff;
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: bold;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 `;
 
 const IconButton = styled.button`
   background: none;
   border: none;
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   color: #8e9297;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color 0.2s;
+  padding: 0.5rem;
   &:hover { color: #1890ff; }
 `;
 
 const Section = styled.div`
   background: #22262b;
-  padding: 2rem 1.5rem;
-  border-radius: 16px;
-  margin-bottom: 1.5rem;
+  padding: 2.5rem 1.5rem;
+  border-radius: 20px;
+  margin: 0 1rem 1.5rem 1rem;
   color: white;
-  min-height: 60vh;
+  flex: 1;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  
+  @media (max-width: 768px) {
+    margin: 0 0.5rem 1rem 0.5rem;
+    padding: 2rem 1rem;
+  }
 `;
 
 const Button = styled.button`
   width: 100%;
-  padding: 0.8rem;
+  padding: 0.9rem;
   margin-top: 1rem;
   background-color: #1890ff;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: bold;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
 
   &:hover {
-    opacity: 0.9;
+    opacity: 0.95;
+    transform: translateY(-1px);
+  }
+  &:active {
+    transform: translateY(0);
   }
 `;
 
@@ -95,19 +107,20 @@ const UserItem = styled.li`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: 1.1rem;
   border-bottom: 1px solid #333;
   cursor: pointer;
   color: white;
+  transition: background 0.2s;
   &:hover { background-color: #2b2f35; }
 `;
 
 const ConnectionCode = styled.div`
   text-align: center;
-  margin: 0.5rem 0;
-  font-size: 1.75rem;
-  font-weight: bold;
-  letter-spacing: 1px;
+  margin: 0.75rem 0;
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 2px;
   color: white;
 `;
 
@@ -117,20 +130,21 @@ const Sidebar = styled.div`
 
 const Tabs = styled.div`
   display: flex;
-  margin-bottom: 1.5rem;
   background: #1a1d21;
   border-bottom: 1px solid #333;
+  margin-bottom: 1.5rem;
+  padding: 0 0.5rem;
 `;
 
 const Tab = styled.div`
-  padding: 1rem 0.5rem;
+  padding: 1.25rem 0.5rem;
   cursor: pointer;
-  border-bottom: 2px solid ${props => props.active ? '#1890ff' : 'transparent'};
+  border-bottom: 3px solid ${props => props.active ? '#1890ff' : 'transparent'};
   color: ${props => props.active ? '#1890ff' : '#8e9297'};
-  font-weight: ${props => props.active ? 'bold' : 'normal'};
+  font-weight: ${props => props.active ? '700' : '500'};
   flex: 1;
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   transition: all 0.2s;
   
   &:hover {
@@ -140,13 +154,15 @@ const Tab = styled.div`
 
 const Input = styled.input`
   width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #333;
-  border-radius: 8px;
+  padding: 0.9rem;
+  border: 2px solid #333;
+  border-radius: 12px;
   margin-bottom: 1rem;
   background: #2b2f35;
   color: white;
   outline: none;
+  font-size: 1rem;
+  transition: border-color 0.2s;
   &:focus { border-color: #1890ff; }
 `;
 
@@ -172,10 +188,10 @@ const NotificationDropdown = styled.div`
   right: 0;
   width: 320px;
   max-width: 92vw;
-  background: ${({ theme }) => theme.sectionBackground};
-  border: 1px solid ${({ theme }) => theme.border};
+  background: #22262b;
+  border: 1px solid #333;
   border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
   z-index: 2001;
   max-height: 60vh;
   overflow-y: auto;
@@ -190,7 +206,7 @@ const NotificationDropdown = styled.div`
 
 const NotificationItem = styled.div`
   padding: 0.8rem;
-  border-bottom: 1px solid ${({ theme }) => theme.border};
+  border-bottom: 1px solid #333;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -199,7 +215,7 @@ const NotificationItem = styled.div`
     border-bottom: none;
   }
   &:hover {
-    background: ${({ theme }) => theme.hover};
+    background: #2b2f35;
   }
 `;
 
@@ -930,77 +946,75 @@ const Dashboard = () => {
       )}
 
       {activeTab === 'profile' && user && (
-          <Section>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ position: 'relative', width: '120px', height: '120px', marginBottom: '1.5rem' }}>
-                      <Avatar user={user} size="120px" style={{ border: `4px solid #1890ff` }} />
-                      
-                      {/* Delete Icon (Left) */}
-                      {user.profilePic && (
-                          <div 
-                              onClick={handleDeleteProfilePic}
-                              style={{
-                                  position: 'absolute',
-                                  bottom: '0',
-                                  left: '0',
-                                  background: '#ff4d4f',
-                                  color: 'white',
-                                  borderRadius: '50%',
-                                  width: '32px',
-                                  height: '32px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  cursor: 'pointer',
-                                  zIndex: 10,
-                                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                              }}
-                              title="Remove Profile Picture"
-                          >
-                              <FaTrash size={14} />
-                          </div>
-                      )}
-
-                      {/* Plus Icon (Right) */}
-                       <label htmlFor="profile-upload" style={{
-                          position: 'absolute',
-                          bottom: '0',
-                          right: '0',
-                          background: '#1890ff',
-                          color: 'white',
-                          borderRadius: '50%',
-                          width: '32px',
-                          height: '32px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          zIndex: 10,
-                          fontSize: '1.2rem',
-                          fontWeight: 'bold',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                      }}>
-                          +
-                      </label>
-                      <input 
-                          id="profile-upload" 
-                          type="file" 
-                          accept="image/*" 
-                          onChange={handleProfilePicChange} 
-                          style={{ display: 'none' }} 
-                      />
-                  </div>
+          <Section style={{ textAlign: 'center' }}>
+              <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 1.5rem auto' }}>
+                  <Avatar user={user} size="120px" style={{ border: `4px solid #1890ff` }} />
                   
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: '0.5rem 0' }}>{user.username}</h3>
-                  <p style={{ color: '#8e9297', fontSize: '1rem', margin: '0.5rem 0 2rem' }}>{user.bio || 'No bio available'}</p>
-                  
-                  <div style={{ textAlign: 'center' }}>
-                      <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', display: 'inline-block', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-                          <QRCodeSVG value={JSON.stringify({ id: user.id, username: user.username })} size={180} />
+                  {/* Delete Icon (Left) */}
+                  {user.profilePic && (
+                      <div 
+                          onClick={handleDeleteProfilePic}
+                          style={{
+                              position: 'absolute',
+                              bottom: '5px',
+                              left: '5px',
+                              background: '#ff4d4f',
+                              color: 'white',
+                              borderRadius: '50%',
+                              width: '32px',
+                              height: '32px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              zIndex: 10,
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                          }}
+                          title="Remove Profile Picture"
+                      >
+                          <FaTrash size={14} />
                       </div>
-                      <ConnectionCode style={{ marginTop: '1.5rem' }}>{user.uniqueCode}</ConnectionCode>
-                      <p style={{ fontSize: '0.9rem', color: '#8e9297' }}>Share this code to connect</p>
+                  )}
+
+                  {/* Plus Icon (Right) */}
+                   <label htmlFor="profile-upload" style={{
+                      position: 'absolute',
+                      bottom: '5px',
+                      right: '5px',
+                      background: '#1890ff',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '32px',
+                      height: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      zIndex: 10,
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                  }}>
+                      +
+                  </label>
+                  <input 
+                      id="profile-upload" 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleProfilePicChange} 
+                      style={{ display: 'none' }} 
+                  />
+              </div>
+              
+              <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: '0.5rem 0', color: 'white' }}>{user.username}</h3>
+              <p style={{ color: '#8e9297', fontSize: '1rem', margin: '0.5rem 0 2rem' }}>{user.bio || 'No bio available'}</p>
+              
+              <div style={{ textAlign: 'center' }}>
+                  <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', display: 'inline-block', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}>
+                      <QRCodeSVG value={JSON.stringify({ id: user.id, username: user.username })} size={180} />
                   </div>
+                  <ConnectionCode style={{ marginTop: '1.5rem', color: 'white' }}>{user.uniqueCode}</ConnectionCode>
+                  <p style={{ fontSize: '0.9rem', color: '#8e9297' }}>Share this code to connect</p>
               </div>
           </Section>
       )}
