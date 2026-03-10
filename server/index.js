@@ -707,15 +707,8 @@ const startServer = () => {
 startServer();
 
 // Initialize DB in background
-initializeDb().then(async () => {
-    console.log('✅ Background Database Initialization Complete.');
-    try {
-        // Standard sync (no alter) to ensure everything is in order
-        await sequelize.sync();
-        console.log('✅ Database synchronized');
-    } catch (err) {
-        console.error('⚠️ Sequelize Sync Error (Non-fatal):', err);
-    }
+initializeDb().then(() => {
+    console.log('✅ Database Initialization Success.');
 }).catch(err => {
-    console.error('❌ Initialization Error:', err);
+    console.error('❌ Database Initialization Failed:', err.message);
 });

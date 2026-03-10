@@ -26,10 +26,10 @@ if (isValidDbUrl) {
     // and mysql2 warns about 'ssl-mode'. We handle SSL explicitly in dialectOptions.
     try {
         const urlObj = new URL(normalizedUrl);
-        if (urlObj.searchParams.has('ssl-mode')) {
-            urlObj.searchParams.delete('ssl-mode');
-            normalizedUrl = urlObj.toString();
-        }
+        // Explicitly remove any ssl-related query params that might trigger driver warnings
+        const paramsToRemove = ['ssl-mode', 'sslmode', 'ssl'];
+        paramsToRemove.forEach(p => urlObj.searchParams.delete(p));
+        normalizedUrl = urlObj.toString();
     } catch (e) {
         // Fallback if URL parsing fails for some reason
         normalizedUrl = normalizedUrl.split('?')[0]; 
@@ -41,12 +41,15 @@ if (isValidDbUrl) {
         dialect: normalizedUrl.startsWith('postgres') ? 'postgres' : 'mysql',
         logging: false,
         dialectOptions: {
-            ssl: {
-                require: true,
-                rejectUnauthorized: false
-            }
+            // Only add SSL if it's NOT a localhost connection
+            ...(normalizedUrl.includes('localhost') || normalizedUrl.includes('127.0.0.1') ? {} : {
+                ssl: {
+                    require: true,
+                    rejectUnauthorized: false
+                }
+            })
         },
-        pool: { max: 5, min: 0, acquire: 30000, idle: 10000 }
+        pool: { max: 10, min: 2, acquire: 30000, idle: 10000 }
     });
 } else if (fs.existsSync(RENDER_DISK_PATH)) {
     // If Render Persistent Disk is detected

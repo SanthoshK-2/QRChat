@@ -78,11 +78,10 @@ const initializeDb = async () => {
             await cleanupExcessiveIndexes();
         }
 
-        // Sync models: use standard sync() to ensure tables exist.
-        // We do NOT use alter: true here as it's redundant and can be slow/problematic.
-        // index.js handles the final sync.
+        // Final safe sync: No alter or force to avoid DB-level conflicts during deployment.
+        // If a table is missing, it will be created.
         await sequelize.sync(); 
-        console.log('Models synchronized');
+        console.log('✅ Models synchronized successfully.');
 
         // Report User Count
         const userCount = await User.count();
