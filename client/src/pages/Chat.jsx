@@ -760,11 +760,11 @@ const Chat = ({ overrideOtherUserId, variant }) => {
       
       <Header>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-            {variant !== 'desktop' && <FaArrowLeft onClick={() => navigate('/')} style={{ cursor: 'pointer', marginRight: '1rem' }} />}
+            <FaArrowLeft onClick={() => navigate('/')} style={{ cursor: 'pointer', marginRight: '1rem', fontSize: '1.2rem' }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => setShowProfileModal(true)}>
                 {otherUser && <Avatar user={otherUser} size="40px" />}
                 <div>
-                    <h3 style={{ margin: 0, color: theme.text, display: 'flex', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, color: theme.text, display: 'flex', alignItems: 'center', fontSize: '1.1rem' }}>
                         {otherUser ? otherUser.username : 'Loading...'}
                         {isMuted && <FaBellSlash size={16} color="red" style={{ marginLeft: 8 }} title="Muted" />}
                         {(isBlocked || isBlockedByPartner) && <FaBan size={16} color="red" style={{ marginLeft: 8 }} title={isBlocked ? "You blocked this user" : "You are blocked"} />}

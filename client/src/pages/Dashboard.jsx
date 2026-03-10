@@ -895,23 +895,17 @@ const Dashboard = () => {
                  </>
              ) : (
                  <>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      <Button onClick={() => setShowScanner(true)} style={{ flex: 1 }}>
-                          <FaQrcode /> Scan QR Code
-                      </Button>
-                      <Button onClick={() => { setShowUserSearch(s => !s); }} style={{ background: theme.secondary, flex: '0 0 auto' }}>
-                          <FaSearch /> Search
-                      </Button>
-                    </div>
+                    <Button onClick={() => setShowUserSearch(s => !s)} style={{ background: theme.secondary, marginBottom: '1rem' }}><FaSearch /> Search Global Users</Button>
                     
                     {showUserSearch && (
-                      <div style={{ marginTop: '1rem' }}>
+                      <div style={{ marginTop: '0.5rem', marginBottom: '1.5rem' }}>
                         <Input 
                           placeholder="Search Global Account by Username"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
+                          style={{ border: '2px solid #555' }} // Darker border for better visibility
                         />
-                        <div style={{ maxHeight: '40vh', overflowY: 'auto', border: `1px solid ${theme.border}`, borderRadius: 8 }}>
+                        <div style={{ maxHeight: '40vh', overflowY: 'auto', border: `1px solid ${theme.border}`, borderRadius: 8, background: '#1a1d21' }}>
                           {isSearching && <p style={{ padding: '0.75rem', color: theme.subText }}>Searching...</p>}
                           {!isSearching && searchResults.length === 0 && searchQuery.trim() !== '' && (
                             <p style={{ padding: '0.75rem', color: theme.subText }}>No global users found</p>
@@ -929,13 +923,16 @@ const Dashboard = () => {
                         </div>
                       </div>
                     )}
+
+                    <Button onClick={() => setShowScanner(true)}><FaQrcode /> Scan QR Code</Button>
                     
-                    <div style={{ margin: '2rem 0', textAlign: 'center', fontWeight: 'bold' }}>OR</div>
+                    <div style={{ margin: '1rem 0', textAlign: 'center', fontWeight: 'bold' }}>OR</div>
                     
                     <Input 
                         placeholder="Enter Unique Number" 
                         value={connectCode} 
                         onChange={(e) => setConnectCode(e.target.value)} 
+                        style={{ border: '2px solid #555' }}
                     />
                     <Button onClick={handleConnect}>
                         <FaSearch /> Connect
