@@ -17,8 +17,24 @@ const isValidDbUrl = process.env.DATABASE_URL &&
                      !process.env.DATABASE_URL.includes('your-db-url');
 
 if (isValidDbUrl) {
-    const rawUrl = process.env.DATABASE_URL;
-    const normalizedUrl = rawUrl.replace(/^mysqls:\/\//i, 'mysql://');
+    let rawUrl = process.env.DATABASE_URL;
+    // Standardize URL: handle mysqls:// and strip problematic query parameters like ssl-mode
+    // which cause warnings or errors in newer mysql2 driver versions.
+    let normalizedUrl = rawUrl.replace(/^mysqls:\/\//i, 'mysql://');
+    
+    // Clean up query parameters: Sequelize passes URL query params to the driver,
+    // and mysql2 warns about 'ssl-mode'. We handle SSL explicitly in dialectOptions.
+    try {
+        const urlObj = new URL(normalizedUrl);
+        if (urlObj.searchParams.has('ssl-mode')) {
+            urlObj.searchParams.delete('ssl-mode');
+            normalizedUrl = urlObj.toString();
+        }
+    } catch (e) {
+        // Fallback if URL parsing fails for some reason
+        normalizedUrl = normalizedUrl.split('?')[0]; 
+    }
+
     console.log('✅ Using CLOUD DATABASE (MySQL/PostgreSQL) from DATABASE_URL.');
     console.log('   Data will persist even if laptop is off.');
     sequelize = new Sequelize(normalizedUrl, {

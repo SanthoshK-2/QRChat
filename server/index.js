@@ -703,18 +703,19 @@ const startServer = () => {
     });
 };
 
+// Start server immediately to satisfy Render's port check and health checks
+startServer();
+
+// Initialize DB in background
 initializeDb().then(async () => {
+    console.log('✅ Background Database Initialization Complete.');
     try {
-        // alter: true can cause ER_TOO_MANY_KEYS in some MySQL versions/configs if run repeatedly
-        // Switching to standard sync() which creates if not exists, but doesn't alter.
-        await sequelize.sync({ alter: false });
-        console.log('Database synced successfully');
+        // Standard sync (no alter) to ensure everything is in order
+        await sequelize.sync();
+        console.log('✅ Database synchronized');
     } catch (err) {
-        console.error('Sequelize Sync Error (Non-fatal):', err);
+        console.error('⚠️ Sequelize Sync Error (Non-fatal):', err);
     }
-    startServer();
 }).catch(err => {
-    console.error('Initialization Error:', err);
-    // Even if init fails completely, try to start server for debug
-    startServer();
+    console.error('❌ Initialization Error:', err);
 });
