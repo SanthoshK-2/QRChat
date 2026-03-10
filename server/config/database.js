@@ -22,46 +22,35 @@ if (isValidDbUrl) {
     // which cause warnings or errors in newer mysql2 driver versions.
     let normalizedUrl = rawUrl.replace(/^mysqls:\/\//i, 'mysql://');
     
-    let dbOptions = {
-        dialect: normalizedUrl.startsWith('postgres') ? 'postgres' : 'mysql',
-        logging: false,
-        pool: { max: 10, min: 2, acquire: 30000, idle: 10000 },
-        dialectOptions: {}
-    };
-
-    // Parse URL manually to pass options as an object. 
-    // This prevents Sequelize from passing query parameters directly to the driver.
+    // Clean up query parameters: Sequelize passes URL query params to the driver,
+    // and mysql2 warns about 'ssl-mode'. We handle SSL explicitly in dialectOptions.
     try {
         const urlObj = new URL(normalizedUrl);
-        dbOptions.host = urlObj.hostname;
-        dbOptions.port = urlObj.port;
-        dbOptions.username = urlObj.username;
-        dbOptions.password = urlObj.password;
-        dbOptions.database = urlObj.pathname.substring(1); // remove leading /
-
-        // SSL Configuration: only add if NOT a local connection
-        if (!urlObj.hostname.includes('localhost') && !urlObj.hostname.includes('127.0.0.1')) {
-            dbOptions.dialectOptions.ssl = {
-                require: true,
-                rejectUnauthorized: false
-            };
-        }
+        // Explicitly remove any ssl-related query params that might trigger driver warnings
+        const paramsToRemove = ['ssl-mode', 'sslmode', 'ssl'];
+        paramsToRemove.forEach(p => urlObj.searchParams.delete(p));
+        normalizedUrl = urlObj.toString();
     } catch (e) {
-        console.error('Error parsing DATABASE_URL, falling back to URL string:', e.message);
-        // If parsing fails, use the clean URL string as a fallback
-        // But we already know this might cause warnings if query params remain.
+        // Fallback if URL parsing fails for some reason
         normalizedUrl = normalizedUrl.split('?')[0]; 
     }
 
     console.log('✅ Using CLOUD DATABASE (MySQL/PostgreSQL) from DATABASE_URL.');
     console.log('   Data will persist even if laptop is off.');
-    
-    // Use object options instead of the URL string to be 100% sure query params are ignored.
-    if (dbOptions.host) {
-        sequelize = new Sequelize(dbOptions.database, dbOptions.username, dbOptions.password, dbOptions);
-    } else {
-        sequelize = new Sequelize(normalizedUrl, dbOptions);
-    }
+    sequelize = new Sequelize(normalizedUrl, {
+        dialect: normalizedUrl.startsWith('postgres') ? 'postgres' : 'mysql',
+        logging: false,
+        dialectOptions: {
+            // Only add SSL if it's NOT a localhost connection
+            ...(normalizedUrl.includes('localhost') || normalizedUrl.includes('127.0.0.1') ? {} : {
+                ssl: {
+                    require: true,
+                    rejectUnauthorized: false
+                }
+            })
+        },
+        pool: { max: 10, min: 2, acquire: 30000, idle: 10000 }
+    });
 } else if (fs.existsSync(RENDER_DISK_PATH)) {
     // If Render Persistent Disk is detected
     console.log('✅ RENDER PERSISTENT DISK DETECTED.');

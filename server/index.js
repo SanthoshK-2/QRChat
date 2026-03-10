@@ -436,7 +436,7 @@ io.on('connection', (socket) => {
 
   // WebRTC Signaling
   socket.on('call_user', (data) => {
-    // If it's a group call, we need to handle it differently or broadcast
+    // 1. Signaling logic
     if (data.isGroup) {
          socket.to(data.groupId).emit('call_group', {
             signal: data.signalData,
@@ -453,10 +453,8 @@ io.on('connection', (socket) => {
             type: data.type 
         });
     }
-  });
 
-  socket.on('call_user', (data) => {
-    // Track initiated call
+    // 2. Analytics Tracking
     try {
       const key = makeKey(data.from, data.userToCall);
       activeCalls.set(key, {
@@ -466,7 +464,7 @@ io.on('connection', (socket) => {
         startedAt: new Date(),
         accepted: false
       });
-    } catch {}
+    } catch (e) { console.error('Call tracking error:', e.message); }
   });
 
   socket.on('answer_call', (data) => {
@@ -697,9 +695,17 @@ const PORT = process.env.PORT || 5001;
 
 // Start server regardless of DB status to ensure static files are served
 const startServer = () => {
+    server.on('error', (e) => {
+        if (e.code === 'EADDRINUSE') {
+            console.error(`Port ${PORT} is already in use.`);
+        } else {
+            console.error('Server error:', e.message);
+        }
+    });
+
     server.listen(PORT, '0.0.0.0', () => {
-        console.log(`Server running on port ${PORT}`);
-        console.log(`Static files path: ${finalBuildPath}`);
+        console.log(`✅ SERVER START SUCCESS: Running on port ${PORT}`);
+        console.log(`✅ FRONTEND PATH: ${finalBuildPath}`);
     });
 };
 
@@ -708,7 +714,7 @@ startServer();
 
 // Initialize DB in background
 initializeDb().then(() => {
-    console.log('✅ Database Initialization Success.');
+    console.log('✅ DATABASE INITIALIZED: Background sync success.');
 }).catch(err => {
-    console.error('❌ Database Initialization Failed:', err.message);
+    console.error('❌ DATABASE ERROR:', err.message);
 });

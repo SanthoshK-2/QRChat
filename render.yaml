@@ -6,6 +6,7 @@ services:
     rootDir: .
     buildCommand: npm install --prefix client && npm install --prefix server && npm run build --prefix client && node scripts/deploy.js
     startCommand: node server/index.js
+    healthCheckPath: /health
     envVars:
       - key: PORT
         value: 5001
