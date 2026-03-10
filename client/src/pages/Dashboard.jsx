@@ -17,8 +17,9 @@ const Container = styled.div`
   max-width: 800px;
   margin: 0 auto;
   padding: 1rem;
-  background-color: ${({ theme }) => theme.body};
+  background-color: #1a1d21;
   min-height: 100vh;
+  color: white;
   
   @media (max-width: 768px) {
     max-width: 100%;
@@ -30,42 +31,46 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  background: ${({ theme }) => theme.sectionBackground};
-  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #1a1d21;
+  padding: 0.75rem 1rem;
   border-radius: 12px;
-  box-shadow: 0 2px 4px ${({ theme }) => theme.shadow};
 `;
 
 const Title = styled.h2`
-  color: ${({ theme }) => theme.primary};
+  color: #1890ff;
   margin: 0;
+  font-size: 1.25rem;
+  font-weight: bold;
 `;
 
 const IconButton = styled.button`
   background: none;
   border: none;
-  font-size: 1.5rem;
-  color: ${({ theme }) => theme.secondary};
+  font-size: 1.25rem;
+  color: #8e9297;
   cursor: pointer;
-  margin-left: 10px;
-  &:hover { color: ${({ theme }) => theme.primary}; }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  &:hover { color: #1890ff; }
 `;
 
 const Section = styled.div`
-  background: ${({ theme }) => theme.sectionBackground};
-  padding: 1.5rem;
-  border-radius: 12px;
+  background: #22262b;
+  padding: 2rem 1.5rem;
+  border-radius: 16px;
   margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px ${({ theme }) => theme.shadow};
-  color: ${({ theme }) => theme.text};
+  color: white;
+  min-height: 60vh;
 `;
 
 const Button = styled.button`
   width: 100%;
   padding: 0.8rem;
   margin-top: 1rem;
-  background-color: ${({ theme }) => theme.primary};
+  background-color: #1890ff;
   color: white;
   border: none;
   border-radius: 8px;
@@ -91,19 +96,19 @@ const UserItem = styled.li`
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid ${({ theme }) => theme.border};
+  border-bottom: 1px solid #333;
   cursor: pointer;
-  color: ${({ theme }) => theme.text};
-  &:hover { background-color: ${({ theme }) => theme.hover}; }
+  color: white;
+  &:hover { background-color: #2b2f35; }
 `;
 
 const ConnectionCode = styled.div`
   text-align: center;
-  margin: 1rem 0;
-  font-size: 1.5rem;
+  margin: 0.5rem 0;
+  font-size: 1.75rem;
   font-weight: bold;
-  letter-spacing: 2px;
-  color: ${({ theme }) => theme.headerText};
+  letter-spacing: 1px;
+  color: white;
 `;
 
 const Sidebar = styled.div`
@@ -112,32 +117,37 @@ const Sidebar = styled.div`
 
 const Tabs = styled.div`
   display: flex;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid ${({ theme }) => theme.border};
+  margin-bottom: 1.5rem;
+  background: #1a1d21;
+  border-bottom: 1px solid #333;
 `;
 
 const Tab = styled.div`
-  padding: 1rem;
+  padding: 1rem 0.5rem;
   cursor: pointer;
-  border-bottom: 2px solid ${props => props.active ? props.theme.primary : 'transparent'};
-  color: ${props => props.active ? props.theme.primary : props.theme.secondary};
+  border-bottom: 2px solid ${props => props.active ? '#1890ff' : 'transparent'};
+  color: ${props => props.active ? '#1890ff' : '#8e9297'};
   font-weight: ${props => props.active ? 'bold' : 'normal'};
   flex: 1;
   text-align: center;
+  font-size: 0.9rem;
+  transition: all 0.2s;
   
   &:hover {
-    background-color: ${({ theme }) => theme.hover};
+    color: #1890ff;
   }
 `;
 
 const Input = styled.input`
   width: 100%;
   padding: 0.8rem;
-  border: 1px solid ${({ theme }) => theme.border};
-  border-radius: 4px;
+  border: 1px solid #333;
+  border-radius: 8px;
   margin-bottom: 1rem;
-  background: ${({ theme }) => theme.inputBg};
-  color: ${({ theme }) => theme.text};
+  background: #2b2f35;
+  color: white;
+  outline: none;
+  &:focus { border-color: #1890ff; }
 `;
 
 const NotificationWrapper = styled.div`
@@ -670,17 +680,15 @@ const Dashboard = () => {
   return (
     <Container>
       <Header>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-            {activeTab !== 'chats' && (
-                <IconButton onClick={() => setActiveTab('chats')} style={{marginRight: '10px', marginLeft: '-10px'}}>
-                    <FaArrowLeft />
-                </IconButton>
-            )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <IconButton onClick={() => setActiveTab('chats')}>
+                <FaArrowLeft />
+            </IconButton>
             <Title>QR Chat</Title>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             {isMobile && (
-              <button onClick={() => setDesktopSite(true)} style={{ background: 'none', border: `1px solid ${theme.border}`, borderRadius: 6, padding: '6px 10px', color: theme.text }}>
+              <button onClick={() => setDesktopSite(true)} style={{ background: 'none', border: `1px solid #333`, borderRadius: 6, padding: '6px 10px', color: '#8e9297', fontSize: '0.8rem' }}>
                 Desktop site
               </button>
             )}
@@ -692,18 +700,18 @@ const Dashboard = () => {
                 {showNotifications && (
                     <>
                     <NotificationBackdrop onClick={() => setShowNotifications(false)} />
-                    <NotificationDropdown>
-                        <h4 style={{ margin: '0 0 0.5rem 0', padding: '0.5rem', borderBottom: `1px solid ${theme.border}` }}>Notifications</h4>
+                    <NotificationDropdown style={{ background: '#22262b', borderColor: '#333' }}>
+                        <h4 style={{ margin: '0 0 0.5rem 0', padding: '0.5rem', borderBottom: `1px solid #333`, color: 'white' }}>Notifications</h4>
                         {requests.length === 0 ? (
-                            <p style={{ padding: '1rem', textAlign: 'center', color: theme.subText }}>No new notifications</p>
+                            <p style={{ padding: '1rem', textAlign: 'center', color: '#8e9297' }}>No new notifications</p>
                         ) : (
                             requests.map(req => (
-                                <NotificationItem key={req.id}>
+                                <NotificationItem key={req.id} style={{ borderBottom: '1px solid #333' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                         <Avatar user={req.Requester} size="32px" />
                                         <div>
-                                            <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{req.Requester ? req.Requester.username : 'Unknown'}</div>
-                                            <div style={{ fontSize: '0.75rem', color: theme.subText }}>Wants to connect</div>
+                                            <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'white' }}>{req.Requester ? req.Requester.username : 'Unknown'}</div>
+                                            <div style={{ fontSize: '0.75rem', color: '#8e9297' }}>Wants to connect</div>
                                         </div>
                                     </div>
                                     <ActionButtons>
@@ -924,32 +932,10 @@ const Dashboard = () => {
       {activeTab === 'profile' && user && (
           <Section>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ position: 'relative', width: '100px', height: '100px', marginBottom: '1rem' }}>
-                      <Avatar user={user} size="100px" style={{ border: `2px solid ${theme.primary}` }} />
-                       <label htmlFor="profile-upload" style={{
-                          position: 'absolute',
-                          bottom: '0',
-                          right: '0',
-                          background: theme.primary,
-                          color: 'white',
-                          borderRadius: '50%',
-                          width: '30px',
-                          height: '30px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          zIndex: 10
-                      }}>
-                          +
-                      </label>
-                      <input 
-                          id="profile-upload" 
-                          type="file" 
-                          accept="image/*" 
-                          onChange={handleProfilePicChange} 
-                          style={{ display: 'none' }} 
-                      />
+                  <div style={{ position: 'relative', width: '120px', height: '120px', marginBottom: '1.5rem' }}>
+                      <Avatar user={user} size="120px" style={{ border: `4px solid #1890ff` }} />
+                      
+                      {/* Delete Icon (Left) */}
                       {user.profilePic && (
                           <div 
                               onClick={handleDeleteProfilePic}
@@ -960,30 +946,60 @@ const Dashboard = () => {
                                   background: '#ff4d4f',
                                   color: 'white',
                                   borderRadius: '50%',
-                                  width: '30px',
-                                  height: '30px',
+                                  width: '32px',
+                                  height: '32px',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   cursor: 'pointer',
-                                  zIndex: 10
+                                  zIndex: 10,
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
                               }}
                               title="Remove Profile Picture"
                           >
                               <FaTrash size={14} />
                           </div>
                       )}
+
+                      {/* Plus Icon (Right) */}
+                       <label htmlFor="profile-upload" style={{
+                          position: 'absolute',
+                          bottom: '0',
+                          right: '0',
+                          background: '#1890ff',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: '32px',
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          zIndex: 10,
+                          fontSize: '1.2rem',
+                          fontWeight: 'bold',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                      }}>
+                          +
+                      </label>
+                      <input 
+                          id="profile-upload" 
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleProfilePicChange} 
+                          style={{ display: 'none' }} 
+                      />
                   </div>
                   
-                  <h3>{user.username}</h3>
-                  <p style={{ color: theme.subText }}>{user.bio || 'No bio available'}</p>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: '0.5rem 0' }}>{user.username}</h3>
+                  <p style={{ color: '#8e9297', fontSize: '1rem', margin: '0.5rem 0 2rem' }}>{user.bio || 'No bio available'}</p>
                   
-                  <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-                      <div style={{ background: 'white', padding: '10px', borderRadius: '8px', display: 'inline-block' }}>
-                          <QRCodeSVG value={JSON.stringify({ id: user.id, username: user.username })} size={150} />
+                  <div style={{ textAlign: 'center' }}>
+                      <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', display: 'inline-block', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                          <QRCodeSVG value={JSON.stringify({ id: user.id, username: user.username })} size={180} />
                       </div>
-                      <ConnectionCode>{user.uniqueCode}</ConnectionCode>
-                      <p style={{ fontSize: '0.9rem', color: theme.subText }}>Share this code to connect</p>
+                      <ConnectionCode style={{ marginTop: '1.5rem' }}>{user.uniqueCode}</ConnectionCode>
+                      <p style={{ fontSize: '0.9rem', color: '#8e9297' }}>Share this code to connect</p>
                   </div>
               </div>
           </Section>
