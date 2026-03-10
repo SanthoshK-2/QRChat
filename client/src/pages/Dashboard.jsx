@@ -236,6 +236,22 @@ const Dashboard = () => {
     try { return localStorage.getItem('desktopSite') === 'true'; } catch { return false; }
   });
   const [selectedChatId, setSelectedChatId] = useState(null);
+  const [chatFilter, setChatFilter] = useState('all');
+  const [favs, setFavs] = useState(() => {
+    try {
+      const raw = localStorage.getItem('favorites');
+      const arr = raw ? JSON.parse(raw) : [];
+      return new Set(arr);
+    } catch { return new Set(); }
+  });
+  const toggleFav = (id) => {
+    setFavs(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      try { localStorage.setItem('favorites', JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
+  };
   const isDesktopMode = !isMobile || desktopSite;
   useEffect(() => { try { localStorage.setItem('desktopSite', desktopSite ? 'true' : 'false'); } catch {} }, [desktopSite]);
 
