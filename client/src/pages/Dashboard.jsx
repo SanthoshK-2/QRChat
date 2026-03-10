@@ -10,6 +10,7 @@ import styled, { useTheme } from 'styled-components';
 import { FaQrcode, FaSearch, FaUser, FaSignOutAlt, FaCog, FaBell, FaCheck, FaImage, FaFile, FaMicrophone, FaVideo, FaArrowLeft, FaTrash, FaPhone, FaPhoneSlash } from 'react-icons/fa';
 import CryptoJS from 'crypto-js';
 import Avatar from '../components/Avatar';
+import Chat from './Chat';
 
 const Container = styled.div`
   width: 100%;
@@ -230,6 +231,13 @@ const Dashboard = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showChatSearch, setShowChatSearch] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
+  const isMobile = typeof window !== 'undefined' ? (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) && window.innerWidth < 992) : false;
+  const [desktopSite, setDesktopSite] = useState(() => {
+    try { return localStorage.getItem('desktopSite') === 'true'; } catch { return false; }
+  });
+  const [selectedChatId, setSelectedChatId] = useState(null);
+  const isDesktopMode = !isMobile || desktopSite;
+  useEffect(() => { try { localStorage.setItem('desktopSite', desktopSite ? 'true' : 'false'); } catch {} }, [desktopSite]);
 
   useEffect(() => {
     if (!socket) return;
@@ -457,6 +465,112 @@ const Dashboard = () => {
   };
 
 
+  if (isDesktopMode) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', background: theme.body }}>
+        <div style={{ width: 360, borderRight: `1px solid ${theme.border}`, overflowY: 'auto', background: theme.sectionBackground }}>
+          <div style={{ padding: '1rem', borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h3 style={{ margin: 0, color: theme.text }}>Chats</h3>
+            {isMobile && (
+              <button onClick={() => setDesktopSite(false)} style={{ background: 'none', border: `1px solid ${theme.border}`, borderRadius: 6, padding: '4px 8px', color: theme.text }}>
+                Mobile UI
+              </button>
+            )}
+          </div>
+          <div style={{ padding: '0.75rem' }}>
+            <input 
+              placeholder="Search connected users" 
+              value={chatSearchQuery} 
+              onChange={(e) => setChatSearchQuery(e.target.value)} 
+              style={{ width: '100%', padding: '0.6rem', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.inputBg, color: theme.text }}
+            />
+          </div>
+          <div>
+            {chats
+              .filter(ci => {
+                if (!chatSearchQuery.trim()) return true;
+                const name = (ci.user?.username || '').toLowerCase();
+                return name.includes(chatSearchQuery.trim().toLowerCase());
+              })
+              .map(chatItem => {
+                const chatUser = chatItem.user;
+                const lastMsg = chatItem.lastMessage;
+                const lastMsgType = chatItem.lastMessageType;
+                const lastMsgAt = chatItem.lastMessageAt;
+                const unreadCount = chatItem.unreadCount || 0;
+                
+                let displayMessage = 'Start a conversation';
+                if (lastMsg) {
+                    if (lastMsgType === 'text') {
+                        displayMessage = decryptMessage(lastMsg, user.id, chatUser.id);
+                    } else if (lastMsgType === 'image') {
+                        displayMessage = <span style={{display:'flex', alignItems:'center', gap:5}}><FaImage size={12}/> Image</span>;
+                    } else if (lastMsgType === 'audio') {
+                        displayMessage = <span style={{display:'flex', alignItems:'center', gap:5}}><FaMicrophone size={12}/> Audio</span>;
+                    } else if (lastMsgType === 'video') {
+                        displayMessage = <span style={{display:'flex', alignItems:'center', gap:5}}><FaVideo size={12}/> Video</span>;
+                    } else {
+                        displayMessage = <span style={{display:'flex', alignItems:'center', gap:5}}><FaFile size={12}/> File</span>;
+                    }
+                }
+                return (
+                  <div key={chatUser.id} 
+                       onClick={() => setSelectedChatId(chatUser.id)} 
+                       style={{ padding: '0.6rem 0.8rem', cursor: 'pointer', borderBottom: `1px solid ${theme.border}`, background: selectedChatId===chatUser.id ? theme.hover : 'transparent' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                      <Avatar user={chatUser} size="40px" />
+                      <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <div style={{ fontWeight: 'bold' }}>{chatUser.username}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                {lastMsgAt && <div style={{ fontSize: '0.7rem', color: theme.subText }}>{new Date(lastMsgAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>}
+                                {unreadCount > 0 && (
+                                    <div style={{ 
+                                        background: theme.primary, 
+                                        color: 'white', 
+                                        borderRadius: '50%', 
+                                        minWidth: '20px', 
+                                        height: '20px', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center', 
+                                        fontSize: '0.7rem', 
+                                        fontWeight: 'bold',
+                                        marginTop: '4px',
+                                        padding: '0 4px'
+                                    }}>
+                                        {unreadCount}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: theme.subText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {displayMessage}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: theme.body }}>
+          {!selectedChatId ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.subText }}>
+              <div style={{ display: 'flex', gap: 20 }}>
+                <div style={{ background: theme.cardBg, padding: 20, borderRadius: 12, boxShadow: `0 2px 8px ${theme.shadow}` }}>Send document</div>
+                <div style={{ background: theme.cardBg, padding: 20, borderRadius: 12, boxShadow: `0 2px 8px ${theme.shadow}` }}>Add contact</div>
+                <div style={{ background: theme.cardBg, padding: 20, borderRadius: 12, boxShadow: `0 2px 8px ${theme.shadow}` }}>Ask Meta AI</div>
+              </div>
+            </div>
+          ) : (
+            <Chat overrideOtherUserId={selectedChatId} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Container>
       <Header>
@@ -468,7 +582,12 @@ const Dashboard = () => {
             )}
             <Title>QR Chat</Title>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {isMobile && (
+              <button onClick={() => setDesktopSite(true)} style={{ background: 'none', border: `1px solid ${theme.border}`, borderRadius: 6, padding: '6px 10px', color: theme.text }}>
+                Desktop site
+              </button>
+            )}
             <NotificationWrapper>
                 <IconButton onClick={() => setShowNotifications(!showNotifications)}>
                     <FaBell />
@@ -563,7 +682,7 @@ const Dashboard = () => {
                         }
 
                         return (
-                        <UserItem key={chatUser.id} onClick={() => navigate(`/chat/${chatUser.id}`)}>
+                        <UserItem key={chatUser.id} onClick={() => isDesktopMode ? setSelectedChatId(chatUser.id) : navigate(`/chat/${chatUser.id}`)}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
                                 <Avatar user={chatUser} size="40px" />
                                 <div style={{ flex: 1, overflow: 'hidden' }}>

@@ -132,8 +132,9 @@ const ActionButton = styled.button`
     }
 `;
 
-const Chat = () => {
-  const { userId: otherUserId } = useParams();
+const Chat = ({ overrideOtherUserId }) => {
+  const params = useParams();
+  const otherUserId = overrideOtherUserId || params.userId;
   const { user } = useContext(AuthContext);
   const { socket } = useContext(SocketContext);
   const { startCall: startGlobalCall } = useContext(CallContext);
