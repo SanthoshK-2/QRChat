@@ -82,8 +82,12 @@ const AdminDashboard = () => {
   }, []);
 
   useEffect(() => {
-    const s = io(SERVER_URL, { reconnection: true });
+    const s = io(SERVER_URL, { 
+      reconnection: true,
+      transports: ['websocket', 'polling'] // Ensure websocket is tried first
+    });
     s.on('connect', () => {
+      console.log('Admin Dashboard connected to real-time updates');
       s.emit('admin_join');
     });
     s.on('admin_online_update', (data) => {

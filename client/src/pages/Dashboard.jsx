@@ -39,10 +39,15 @@ const Header = styled.div`
 const Title = styled.h2`
   color: #1890ff;
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.25rem; // Reduced slightly for better fit
   font-weight: 800;
   letter-spacing: -0.5px;
-  white-space: nowrap; // Keep label on single line
+  white-space: nowrap;
+  flex-shrink: 0;
+  
+  @media (min-width: 768px) {
+    font-size: 1.4rem;
+  }
 `;
 
 const IconButton = styled.button`
@@ -56,6 +61,7 @@ const IconButton = styled.button`
   justify-content: center;
   transition: color 0.2s;
   padding: 0.5rem;
+  flex-shrink: 0;
   &:hover { color: #1890ff; }
 `;
 

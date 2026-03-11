@@ -37,6 +37,7 @@ const allowList = (() => {
     const defaults = [
         'https://qrchat-1.onrender.com',
         'https://qr-chat.vercel.app',
+        'https://qr-chat-1.vercel.app', // Explicitly add the 1 variant
         'http://localhost:5173',
         'http://localhost:3000'
     ];
@@ -50,8 +51,8 @@ const corsOptions = {
         const isAllowed = allowList.some(a => {
             if (a === '*') return true;
             if (origin === a) return true;
-            // Handle Vercel branch previews (e.g. qr-chat-git-main-user.vercel.app)
-            if (a.includes('vercel.app') && origin.endsWith('vercel.app')) return true;
+            // Handle Vercel domains (including previews and -1 variants)
+            if (origin.endsWith('.vercel.app')) return true;
             return false;
         });
 
@@ -59,7 +60,7 @@ const corsOptions = {
             cb(null, true);
         } else {
             console.warn(`CORS blocked: ${origin}`);
-            cb(new Error('Not allowed by CORS'));
+            cb(new Error(`CORS blocked for ${origin}`));
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
