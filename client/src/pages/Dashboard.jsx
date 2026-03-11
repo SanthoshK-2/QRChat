@@ -14,7 +14,7 @@ import Chat from './Chat';
 
 const Container = styled.div`
   width: 100%;
-  max-width: 800px;
+  max-width: ${props => props.isDesktop ? '100%' : '800px'};
   margin: 0 auto;
   padding: 0;
   background-color: #1a1d21;
@@ -42,6 +42,7 @@ const Title = styled.h2`
   font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: -0.5px;
+  white-space: nowrap; // Keep label on single line
 `;
 
 const IconButton = styled.button`
@@ -496,17 +497,20 @@ const Dashboard = () => {
   if (isDesktopMode) {
     return (
       <div style={{ display: 'flex', height: '100vh', background: theme.body }}>
-        <div style={{ width: 60, borderRight: `1px solid ${theme.border}`, background: theme.sectionBackground, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 8 }}>
-          <IconButton title="Chats" onClick={() => setActiveTab('chats')}>
+        <div style={{ width: 100, borderRight: `1px solid ${theme.border}`, background: theme.sectionBackground, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, padding: '24px 8px' }}>
+          <div style={{ marginBottom: 10, textAlign: 'center' }}>
+            <Title style={{ fontSize: '0.9rem', color: '#1890ff', fontWeight: '900' }}>QR CHAT</Title>
+          </div>
+          <IconButton title="Chats" onClick={() => setActiveTab('chats')} style={{ color: activeTab === 'chats' ? theme.primary : '#8e9297', fontSize: '1.6rem' }}>
             <FaUser />
           </IconButton>
-          <IconButton title="Calls" onClick={() => setActiveTab('calls')}>
+          <IconButton title="Calls" onClick={() => setActiveTab('calls')} style={{ color: activeTab === 'calls' ? theme.primary : '#8e9297', fontSize: '1.6rem' }}>
             <FaPhone />
           </IconButton>
-          <IconButton title="Connect" onClick={() => setActiveTab('connect')}>
+          <IconButton title="Connect" onClick={() => setActiveTab('connect')} style={{ color: activeTab === 'connect' ? theme.primary : '#8e9297', fontSize: '1.6rem' }}>
             <FaQrcode />
           </IconButton>
-          <IconButton title="Settings" onClick={() => navigate('/settings')}>
+          <IconButton title="Settings" onClick={() => navigate('/settings')} style={{ fontSize: '1.6rem' }}>
             <FaCog />
           </IconButton>
         </div>
@@ -686,7 +690,7 @@ const Dashboard = () => {
               Select a chat to start messaging
             </div>
           ) : (
-            <Chat overrideOtherUserId={selectedChatId} variant="desktop" />
+            <Chat overrideOtherUserId={selectedChatId} variant="desktop" onBack={() => setSelectedChatId(null)} />
           )}
         </div>
       </div>
@@ -694,13 +698,15 @@ const Dashboard = () => {
   }
 
   return (
-    <Container>
+    <Container isDesktop={isDesktopMode}>
       <Header>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <IconButton onClick={() => setActiveTab('chats')}>
-                <FaArrowLeft />
-            </IconButton>
-            <Title>QR Chat</Title>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0 }}>
+            {activeTab !== 'chats' && (
+                <IconButton onClick={() => setActiveTab('chats')} style={{ flexShrink: 0, padding: '0.5rem 0.25rem' }}>
+                    <FaArrowLeft />
+                </IconButton>
+            )}
+            <Title style={{ flexShrink: 0 }}>QR Chat</Title>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             {isMobile && (

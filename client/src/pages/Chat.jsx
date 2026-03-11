@@ -30,14 +30,14 @@ const pulseAnimation = `
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
+  height: 100%;
   background: ${({ theme }) => theme.body};
-  position: fixed;
+  position: ${props => props.variant === 'desktop' ? 'relative' : 'fixed'};
   top: 0;
   left: 0;
   width: 100%;
   overflow: hidden;
+  z-index: ${props => props.variant === 'desktop' ? '1' : '1000'};
   ${pulseAnimation}
 `;
 
@@ -138,7 +138,7 @@ const ActionButton = styled.button`
     }
 `;
 
-const Chat = ({ overrideOtherUserId, variant }) => {
+const Chat = ({ overrideOtherUserId, variant, onBack }) => {
   const params = useParams();
   const otherUserId = overrideOtherUserId || params.userId;
   const { user } = useContext(AuthContext);
@@ -756,21 +756,21 @@ const Chat = ({ overrideOtherUserId, variant }) => {
   };
 
   return (
-    <Container>
+    <Container variant={variant}>
       
       <Header>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-            <FaArrowLeft onClick={() => navigate('/')} style={{ cursor: 'pointer', marginRight: '1rem', fontSize: '1.2rem' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }} onClick={() => setShowProfileModal(true)}>
-                {otherUser && <Avatar user={otherUser} size="40px" />}
-                <div>
-                    <h3 style={{ margin: 0, color: theme.text, display: 'flex', alignItems: 'center', fontSize: '1.1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+            <FaArrowLeft onClick={() => onBack ? onBack() : navigate('/')} style={{ cursor: 'pointer', marginRight: '0.75rem', fontSize: '1.2rem', flexShrink: 0 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', minWidth: 0, flex: 1 }} onClick={() => setShowProfileModal(true)}>
+                {otherUser && <Avatar user={otherUser} size="40px" style={{ flexShrink: 0 }} />}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                    <h3 style={{ margin: 0, color: theme.text, display: 'flex', alignItems: 'center', fontSize: '1.1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {otherUser ? otherUser.username : 'Loading...'}
-                        {isMuted && <FaBellSlash size={16} color="red" style={{ marginLeft: 8 }} title="Muted" />}
-                        {(isBlocked || isBlockedByPartner) && <FaBan size={16} color="red" style={{ marginLeft: 8 }} title={isBlocked ? "You blocked this user" : "You are blocked"} />}
+                        {isMuted && <FaBellSlash size={14} color="red" style={{ marginLeft: 6, flexShrink: 0 }} title="Muted" />}
+                        {(isBlocked || isBlockedByPartner) && <FaBan size={14} color="red" style={{ marginLeft: 6, flexShrink: 0 }} title={isBlocked ? "You blocked this user" : "You are blocked"} />}
                     </h3>
                     {otherUser && (
-                        <div style={{ fontSize: '0.8rem', color: isTyping || isRecording ? theme.primary : theme.subText, fontWeight: isTyping || isRecording ? 'bold' : 'normal' }}>
+                        <div style={{ fontSize: '0.75rem', color: isTyping || isRecording ? theme.primary : theme.subText, fontWeight: isTyping || isRecording ? 'bold' : 'normal', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {isTyping ? 'Typing...' : isRecording ? 'Record Audio...' : otherUser.isOnline ? 'Online' : 'Offline'}
                         </div>
                     )}
