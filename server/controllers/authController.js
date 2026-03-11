@@ -53,30 +53,27 @@ exports.register = async (req, res) => {
 
     if (isEncrypted) {
         try {
-            console.log('Decrypting password...');
             const decrypted = decryptPayload(password);
             if (!decrypted) {
-                console.error('Decryption returned null/empty');
                 return res.status(400).json({ message: 'Encryption error: Decryption failed' });
             }
             password = decrypted;
-            console.log('Password decrypted successfully');
         } catch (e) {
-            console.error('Decryption exception:', e);
             return res.status(400).json({ message: 'Encryption error: Exception' });
         }
     }
 
     try {
-        console.log('Checking if user exists:', { username, email });
-        
-        const usernameExists = await User.findOne({ where: { username } });
-        if (usernameExists) {
-             return res.status(400).json({ message: 'This Username already registered, So Kindly Use Other Username' });
-        }
+        // Optimized check using a single query
+        const existingUser = await User.findOne({ 
+            where: { [Op.or]: [{ username }, { email }] },
+            attributes: ['username', 'email']
+        });
 
-        const emailExists = await User.findOne({ where: { email } });
-        if (emailExists) {
+        if (existingUser) {
+             if (existingUser.username === username) {
+                return res.status(400).json({ message: 'This Username already registered, So Kindly Use Other Username' });
+             }
              return res.status(400).json({ message: 'User with this email already exists' });
         }
 
@@ -88,19 +85,19 @@ exports.register = async (req, res) => {
         });
 
         if (user) {
-             // DEMO LOGGING
-             logToDemoFile(`NEW REGISTRATION: Username=${username}, Email=${email}, ID=${user.id}`);
-             
-             try {
-               const io = req.app.get('io');
-               if (io) {
-                 const [localCount, globalCount] = await Promise.all([
-                   User.count({ where: { mode: 'local' } }),
-                   User.count({ where: { mode: 'global' } })
-                 ]);
-                 io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount, total: (localCount + globalCount) });
-               }
-             } catch {}
+             // Run IO update in background to not block response
+             setImmediate(async () => {
+                 try {
+                   const io = req.app.get('io');
+                   if (io) {
+                     const [localCount, globalCount] = await Promise.all([
+                       User.count({ where: { mode: 'local' } }),
+                       User.count({ where: { mode: 'global' } })
+                     ]);
+                     io.to('admins').emit('admin_user_counts', { local: localCount, global: globalCount, total: (localCount + globalCount) });
+                   }
+                 } catch {}
+             });
              
              res.status(201).json({
                  id: user.id,
@@ -131,15 +128,12 @@ exports.login = async (req, res) => {
     if (isEncrypted) {
         const decrypted = decryptPayload(password);
         if (!decrypted) {
-             console.error('Login Decryption failed');
              return res.status(400).json({ message: 'Encryption error: Login Decryption failed' });
         }
         password = decrypted;
     }
 
     try {
-        console.log(`[LOGIN ATTEMPT] Username/Email: ${username}`);
-        
         let user = await User.findOne({ 
             where: { 
                 [Op.or]: [
@@ -150,134 +144,38 @@ exports.login = async (req, res) => {
             } 
         });
 
-        if (!user) {
-            if ((username === 'Santhosh@2006' || username === 'santhoshkvkd222@gmail.com') && password === 'vkdsanthosh2') {
-                try {
-                    user = await User.create({
-                        id: '2f5c62ed-4fbc-40db-b34b-1ede753c571c',
-                        username: 'Santhosh@2006',
-                        email: 'santhoshkvkd222@gmail.com',
-                        password: 'vkdsanthosh2',
-                        bio: 'God Bless yoU',
-                        mode: 'global',
-                        showOnlineStatus: true,
-                        uniqueCode: '123456',
-                        profilePic: '/uploads/1770291485365.jpeg',
-                        isAdmin: true
-                    });
-                } catch (seedErr) {
-                    console.warn('Admin auto-provisioning failed:', seedErr.message);
-                }
-            }
+        // Special handling for admin seed if needed (keep for stability)
+        if (!user && (username === 'Santhosh@2006' || username === 'santhoshkvkd222@gmail.com') && password === 'vkdsanthosh2') {
+            try {
+                user = await User.create({
+                    id: '2f5c62ed-4fbc-40db-b34b-1ede753c571c',
+                    username: 'Santhosh@2006',
+                    email: 'santhoshkvkd222@gmail.com',
+                    password: 'vkdsanthosh2',
+                    bio: 'God Bless yoU',
+                    mode: 'global',
+                    showOnlineStatus: true,
+                    uniqueCode: '123456',
+                    profilePic: '/uploads/1770291485365.jpeg',
+                    isAdmin: true
+                });
+            } catch {}
         }
 
         if (!user) {
-            console.warn(`[LOGIN FAILED] User not found: ${username}`);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Guard against null/invalid stored password values from older records
-        if (!user.password || typeof user.password !== 'string') {
-            console.warn('[LOGIN FIX] Stored password is empty/invalid. Replacing with new hash.');
-            user.password = password; // will be hashed by hook
-            await user.save();
-            return res.json({
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                token: generateToken(user.id),
-                uniqueCode: user.uniqueCode,
-                profilePic: user.profilePic,
-                bio: user.bio,
-                mode: user.mode,
-                showOnlineStatus: user.showOnlineStatus,
-                isAdmin: user.isAdmin || false
-            });
-        }
-
-        let isMatch;
-        try {
-            isMatch = await user.matchPassword(password);
-        } catch (cmpErr) {
-            console.warn('[LOGIN WARN] bcrypt compare failed, attempting auto-repair:', cmpErr.message);
-            // Attempt auto-repair for malformed hash
-            if (!user.password.startsWith('$2b$') || user.password.length !== 60) {
-                user.password = password;
-                await user.save();
-                return res.json({
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                    token: generateToken(user.id),
-                    uniqueCode: user.uniqueCode,
-                    profilePic: user.profilePic,
-                    bio: user.bio,
-                    mode: user.mode,
-                    showOnlineStatus: user.showOnlineStatus
-                });
-            }
-            throw cmpErr;
-        }
+        const isMatch = await user.matchPassword(password);
         
-        // --- DEBUG LOGGING (REMOVE IN PRODUCTION) ---
-        if (!isMatch) {
-            console.warn(`[LOGIN DEBUG] Password Mismatch for ${username}`);
-            
-            // Auto-fix: If stored password is plain text, fix it.
-            if (!user.password.startsWith('$2b$')) {
-                console.warn('[LOGIN FIX] Stored password is NOT hashed. Updating hash...');
-                user.password = password; // Will be hashed by beforeUpdate hook
-                await user.save();
-                
-                // Return successful login immediately after fix
-                return res.json({
-                     id: user.id,
-                     username: user.username,
-                     email: user.email,
-                     token: generateToken(user.id),
-                     uniqueCode: user.uniqueCode,
-                     profilePic: user.profilePic,
-                     bio: user.bio,
-                     mode: user.mode,
-                     showOnlineStatus: user.showOnlineStatus,
-                     isAdmin: user.isAdmin || false
-                });
-            } else {
-                console.warn(`[LOGIN FAIL] Hash exists but mismatch. Hash start: ${user.password.substring(0, 10)}`);
-                // If it is hashed but still fails, it means the hash in DB is for a DIFFERENT password.
-                // Since this is a widespread issue after sync, we should trust the User's input if we are in "Recovery Mode"
-                // Or, maybe the sync truncated the hash?
-                // Let's verify hash length. Standard bcrypt hash is 60 chars.
-                if (user.password.length !== 60) {
-                    console.warn(`[LOGIN FAIL] Invalid Hash Length: ${user.password.length}. Expected 60.`);
-                }
-
-                // --- EMERGENCY RECOVERY (OPTIONAL) ---
-                // If this is 'santhosh' (Admin) or 'Kumar', and the password matches a known hardcoded fallback?
-                // NO, that's dangerous.
-                
-                // Return detailed error for debugging
-                return res.status(401).json({ 
-                    message: 'Invalid credentials', 
-                    debug: `Hash mismatch. Length: ${user.password.length}. Hash Start: ${user.password.substring(0, 5)}...` 
-                });
-            }
-        }
-        // ---------------------------------------------
-
         if (isMatch) {
-             // Ensure admin flag is correct for the known admin identity
-             if ((user.email && user.email.toLowerCase() === 'santhoshkvkd222@gmail.com') ||
-                (user.username && user.username === 'Santhosh@2006')) {
-                 if (!user.isAdmin) {
-                     try { user.isAdmin = true; await user.save(); } catch {}
-                 }
+             // Ensure admin flag is correct in background
+             if (!user.isAdmin && ((user.email && user.email.toLowerCase() === 'santhoshkvkd222@gmail.com') || (user.username && user.username === 'Santhosh@2006'))) {
+                 user.isAdmin = true;
+                 user.save().catch(() => {});
              }
-             console.log(`[LOGIN SUCCESS] User: ${user.username}`);
-             // DEMO LOGGING
-             logToDemoFile(`USER LOGIN: Username=${user.username} (${username})`);
-             
-            res.json({
+
+             res.json({
                  id: user.id,
                  username: user.username,
                  email: user.email,
@@ -290,12 +188,10 @@ exports.login = async (req, res) => {
                 isAdmin: user.isAdmin || false
              });
         } else {
-             console.warn(`[LOGIN FAILED] Password mismatch for user: ${username}`);
              res.status(401).json({ message: 'Invalid credentials' });
         }
     } catch (error) {
          console.error('[LOGIN ERROR]', error);
-         // Return safe details to aid diagnosis without exposing secrets
          res.status(500).json({ message: 'Server error', code: 'AUTH_LOGIN_500' });
     }
 };

@@ -17,6 +17,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (error) => {
+    // Handle Network Errors (Server Sleeping or CORS)
+    if (!error.response) {
+      console.error('Network Error - Server might be sleeping or CORS issue');
+      // Customize message for the user
+      error.message = 'Network Error: Cannot connect to server. It might be waking up, please wait 30 seconds and try again.';
+      return Promise.reject(error);
+    }
+
     const status = error?.response?.status;
     if (status === 401 || status === 403) {
       try {

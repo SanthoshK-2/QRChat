@@ -34,19 +34,39 @@ const allowList = (() => {
         .split(',')
         .map(s => s.trim())
         .filter(Boolean);
-    const defaults = ['https://qrchat-1.onrender.com'];
+    const defaults = [
+        'https://qrchat-1.onrender.com',
+        'https://qr-chat.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:3000'
+    ];
     return [...new Set([...envList, ...defaults])];
 })();
 const corsOptions = {
     origin: (origin, cb) => {
+        // Allow requests with no origin (like mobile apps or curl)
         if (!origin) return cb(null, true);
-        const ok = allowList.some(a => origin === a);
-        cb(ok ? null : new Error('Not allowed by CORS'), ok);
+        
+        const isAllowed = allowList.some(a => {
+            if (a === '*') return true;
+            if (origin === a) return true;
+            // Handle Vercel branch previews (e.g. qr-chat-git-main-user.vercel.app)
+            if (a.includes('vercel.app') && origin.endsWith('vercel.app')) return true;
+            return false;
+        });
+
+        if (isAllowed) {
+            cb(null, true);
+        } else {
+            console.warn(`CORS blocked: ${origin}`);
+            cb(new Error('Not allowed by CORS'));
+        }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: false
+    credentials: true,
+    optionsSuccessStatus: 200
 };
-app.use(cors(process.env.NODE_ENV === 'production' ? corsOptions : { origin: '*', methods: ['GET','POST','PUT','DELETE','OPTIONS'] }));
+app.use(cors(corsOptions)); // Use unified cors options for all environments for stability
 
 app.use(helmet({
     contentSecurityPolicy: false,
