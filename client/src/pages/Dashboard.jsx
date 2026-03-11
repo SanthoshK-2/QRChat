@@ -7,7 +7,7 @@ import api from '../utils/api';
 import QRScanner from '../components/QRScanner';
 import { QRCodeSVG } from 'qrcode.react';
 import styled, { useTheme } from 'styled-components';
-import { FaQrcode, FaSearch, FaUser, FaSignOutAlt, FaCog, FaBell, FaCheck, FaImage, FaFile, FaMicrophone, FaVideo, FaArrowLeft, FaTrash, FaPhone, FaPhoneSlash } from 'react-icons/fa';
+import { FaQrcode, FaSearch, FaUser, FaSignOutAlt, FaCog, FaBell, FaCheck, FaImage, FaFile, FaMicrophone, FaVideo, FaArrowLeft, FaTrash, FaPhone, FaPhoneSlash, FaComments } from 'react-icons/fa';
 import CryptoJS from 'crypto-js';
 import Avatar from '../components/Avatar';
 import Chat from './Chat';
@@ -22,6 +22,7 @@ const Container = styled.div`
   color: white;
   display: flex;
   flex-direction: column;
+  padding-bottom: ${props => props.isDesktop ? '0' : '70px'}; // Space for bottom tabs on mobile
   
   @media (max-width: 768px) {
     max-width: 100%;
@@ -141,6 +142,19 @@ const Tabs = styled.div`
   border-bottom: 1px solid #333;
   margin-bottom: 1.5rem;
   padding: 0 0.5rem;
+  
+  @media (max-width: 768px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-bottom: 0;
+    border-bottom: none;
+    border-top: 1px solid #333;
+    z-index: 1000;
+    padding: 0;
+    background: #1a1d21;
+  }
 `;
 
 const Tab = styled.div`
@@ -156,6 +170,17 @@ const Tab = styled.div`
   
   &:hover {
     color: #1890ff;
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem 0.25rem;
+    border-bottom: none;
+    border-top: 3px solid ${props => props.active ? '#1890ff' : 'transparent'};
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
   }
 `;
 
@@ -758,10 +783,22 @@ const Dashboard = () => {
       </Header>
 
       <Tabs>
-        <Tab active={activeTab === 'chats'} onClick={() => setActiveTab('chats')}>Chat</Tab>
-        <Tab active={activeTab === 'calls'} onClick={() => setActiveTab('calls')}>Call</Tab>
-        <Tab active={activeTab === 'connect'} onClick={() => setActiveTab('connect')}>Connect</Tab>
-        <Tab active={activeTab === 'profile'} onClick={() => setActiveTab('profile')}>Profile</Tab>
+        <Tab active={activeTab === 'chats'} onClick={() => setActiveTab('chats')}>
+          {isMobile && <FaComments size={18} />}
+          Chat
+        </Tab>
+        <Tab active={activeTab === 'calls'} onClick={() => setActiveTab('calls')}>
+          {isMobile && <FaPhone size={18} />}
+          Call
+        </Tab>
+        <Tab active={activeTab === 'connect'} onClick={() => setActiveTab('connect')}>
+          {isMobile && <FaQrcode size={18} />}
+          Connect
+        </Tab>
+        <Tab active={activeTab === 'profile'} onClick={() => setActiveTab('profile')}>
+          {isMobile && <FaUser size={18} />}
+          Profile
+        </Tab>
       </Tabs>
 
 {/* Requests section moved to Notification Dropdown */}
