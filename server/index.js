@@ -69,17 +69,7 @@ app.use('/uploads', express.static(uploadsDir));
 
 // Health Check Route
 app.get('/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        timestamp: new Date(),
-        uptime: process.uptime(),
-        paths: {
-            cwd: process.cwd(),
-            __dirname: __dirname,
-            finalBuildPath: finalBuildPath,
-            exists: finalBuildPath ? fs.existsSync(finalBuildPath) : false
-        }
-    });
+    res.send("Server is running");
 });
 
 app.get('/api/diag', async (req, res) => {

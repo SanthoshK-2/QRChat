@@ -3,5 +3,8 @@ const hostname = typeof window !== 'undefined' ? window.location.hostname : 'loc
 
 export const SERVER_URL = (hostname === 'localhost' || hostname.startsWith('192.168.')) 
   ? `http://${hostname}:5001`
-  : window.location.origin; // For Cloudflare/Production (serve from same origin)
+  : "https://qrchat-1.onrender.com"; // Fixed Render Backend URL for Vercel deployment
+
+export const API_URL = `${SERVER_URL}/api`;
+export const SOCKET_URL = SERVER_URL;
 
