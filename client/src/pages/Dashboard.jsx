@@ -541,6 +541,32 @@ const Dashboard = () => {
           <IconButton title="Connect" onClick={() => setActiveTab('connect')} style={{ color: activeTab === 'connect' ? theme.primary : '#8e9297', fontSize: '1.6rem' }}>
             <FaQrcode />
           </IconButton>
+          <NotificationWrapper style={{ position: 'relative' }}>
+              <IconButton onClick={() => setShowNotifications(!showNotifications)} style={{ color: notifications.length > 0 ? theme.primary : '#8e9297', fontSize: '1.6rem' }}>
+                  <FaBell />
+                  {notifications.length > 0 && <Badge>{notifications.length}</Badge>}
+              </IconButton>
+              {showNotifications && (
+                  <NotificationDropdown style={{ left: '100%', top: 0, marginLeft: 10, right: 'auto' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                          <h4 style={{ margin: 0 }}>Notifications</h4>
+                          {notifications.length > 0 && (
+                              <button onClick={clearNotifications} style={{ background: 'none', border: 'none', color: '#1890ff', cursor: 'pointer', fontSize: '0.8rem' }}>Clear All</button>
+                          )}
+                      </div>
+                      {notifications.length === 0 ? (
+                          <p style={{ color: '#8e9297', textAlign: 'center', padding: '1rem 0' }}>No new notifications</p>
+                      ) : (
+                          notifications.map(n => (
+                              <NotificationItem key={n.id} onClick={() => handleNotificationClick(n)}>
+                                  <div style={{ fontWeight: 'bold', color: 'white' }}>{n.title}</div>
+                                  <div style={{ fontSize: '0.85rem', color: '#8e9297' }}>{n.message}</div>
+                              </NotificationItem>
+                          ))
+                      )}
+                  </NotificationDropdown>
+              )}
+          </NotificationWrapper>
           <IconButton title="Settings" onClick={() => navigate('/settings')} style={{ fontSize: '1.6rem' }}>
             <FaCog />
           </IconButton>

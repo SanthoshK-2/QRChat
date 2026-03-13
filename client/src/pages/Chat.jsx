@@ -30,12 +30,13 @@ const pulseAnimation = `
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100%;
-  background: ${({ theme }) => theme.body};
   position: ${props => props.variant === 'desktop' ? 'relative' : 'fixed'};
   top: 0;
   left: 0;
-  width: 100%;
+  right: 0;
+  bottom: 0;
+  height: ${props => props.variant === 'desktop' ? '100%' : '100dvh'};
+  background: ${({ theme }) => theme.body};
   overflow: hidden;
   z-index: ${props => props.variant === 'desktop' ? '1' : '1000'};
   ${pulseAnimation}
