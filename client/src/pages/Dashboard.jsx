@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import SocketContext from '../context/SocketContext';
@@ -456,7 +456,7 @@ const Dashboard = () => {
     }
   }, [user, socket]); // Add user dependency for decrypt logic if needed
 
-  const handleScan = (data) => {
+  const handleScan = useCallback((data) => {
     if (data) {
         try {
              const parsed = JSON.parse(data);
@@ -468,7 +468,7 @@ const Dashboard = () => {
         }
         setShowScanner(false);
     }
-  };
+  }, [navigate]);
 
   const handleConnect = async () => {
       try {
