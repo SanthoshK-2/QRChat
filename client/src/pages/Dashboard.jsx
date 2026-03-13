@@ -299,14 +299,19 @@ const Dashboard = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [showChatSearch, setShowChatSearch] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
-  const isMobile = typeof window !== 'undefined' ? (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) && window.innerWidth < 992) : false;
+  const isMobileDevice = typeof window !== 'undefined' ? /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) : false;
   const [desktopSite, setDesktopSite] = useState(() => {
-    try { return localStorage.getItem('desktopSite') === 'true'; } catch { return false; }
+    try { 
+        const saved = localStorage.getItem('desktopSite');
+        if (saved !== null) return saved === 'true';
+        return !isMobileDevice; // Default to desktop UI on desktop devices, mobile UI on mobile devices
+    } catch { return true; }
   });
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [chatFilter, setChatFilter] = useState('all');
 
-  const isDesktopMode = !isMobile || desktopSite;
+  const isDesktopMode = desktopSite;
+  const isMobile = !desktopSite; // For UI components that check isMobile explicitly
   useEffect(() => { try { localStorage.setItem('desktopSite', desktopSite ? 'true' : 'false'); } catch {} }, [desktopSite]);
 
   useEffect(() => {
@@ -591,11 +596,9 @@ const Dashboard = () => {
         <div style={{ width: 360, borderRight: `1px solid ${theme.border}`, overflowY: 'auto', background: theme.sectionBackground }}>
           <div style={{ padding: '1rem', borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h3 style={{ margin: 0, color: theme.text }}>Chats</h3>
-            {isMobile && (
-              <button onClick={() => setDesktopSite(false)} style={{ background: 'none', border: `1px solid ${theme.border}`, borderRadius: 6, padding: '4px 8px', color: theme.text }}>
+            <button onClick={() => setDesktopSite(false)} style={{ background: 'none', border: `1px solid ${theme.border}`, borderRadius: 6, padding: '4px 8px', color: theme.text, fontSize: '0.8rem', cursor: 'pointer' }}>
                 Mobile UI
-              </button>
-            )}
+            </button>
           </div>
           <div style={{ padding: '0.75rem' }}>
             <input 
@@ -782,11 +785,9 @@ const Dashboard = () => {
             <Title style={{ flexShrink: 0 }}>QR Chat</Title>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {isMobile && (
-              <button onClick={() => setDesktopSite(true)} style={{ background: 'none', border: `1px solid #333`, borderRadius: 6, padding: '6px 10px', color: '#8e9297', fontSize: '0.8rem' }}>
+            <button onClick={() => setDesktopSite(true)} style={{ background: 'none', border: `1px solid #333`, borderRadius: 6, padding: '6px 10px', color: '#8e9297', fontSize: '0.8rem', cursor: 'pointer' }}>
                 Desktop site
-              </button>
-            )}
+            </button>
             <NotificationWrapper>
                 <IconButton onClick={() => setShowNotifications(!showNotifications)}>
                     <FaBell />

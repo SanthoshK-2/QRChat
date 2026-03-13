@@ -788,6 +788,14 @@ const Chat = ({ overrideOtherUserId, variant, onBack }) => {
             </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
+            {variant !== 'desktop' && (
+                <button 
+                    onClick={() => { localStorage.setItem('desktopSite', 'true'); window.location.href = '/'; }} 
+                    style={{ background: 'none', border: `1px solid ${theme.border}`, borderRadius: 6, padding: '4px 8px', color: theme.subText, fontSize: '0.7rem', marginRight: '8px', cursor: 'pointer' }}
+                >
+                    Desktop site
+                </button>
+            )}
             <IconButton onClick={() => startCall('audio')}><FaPhone /></IconButton>
             <IconButton onClick={() => startCall('video')}><FaVideo /></IconButton>
             <div style={{ position: 'relative' }}>
