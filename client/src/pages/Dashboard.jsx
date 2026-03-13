@@ -552,25 +552,31 @@ const Dashboard = () => {
             <FaQrcode />
           </IconButton>
           <NotificationWrapper style={{ position: 'relative' }}>
-              <IconButton onClick={() => setShowNotifications(!showNotifications)} style={{ color: notifications.length > 0 ? theme.primary : '#8e9297', fontSize: '1.6rem' }}>
+              <IconButton onClick={() => setShowNotifications(!showNotifications)} style={{ color: requests.length > 0 ? theme.primary : '#8e9297', fontSize: '1.6rem' }}>
                   <FaBell />
-                  {notifications.length > 0 && <Badge>{notifications.length}</Badge>}
+                  {requests.length > 0 && <Badge>{requests.length}</Badge>}
               </IconButton>
               {showNotifications && (
                   <NotificationDropdown style={{ left: '100%', top: 0, marginLeft: 10, right: 'auto' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                           <h4 style={{ margin: 0 }}>Notifications</h4>
-                          {notifications.length > 0 && (
-                              <button onClick={clearNotifications} style={{ background: 'none', border: 'none', color: '#1890ff', cursor: 'pointer', fontSize: '0.8rem' }}>Clear All</button>
-                          )}
                       </div>
-                      {notifications.length === 0 ? (
+                      {requests.length === 0 ? (
                           <p style={{ color: '#8e9297', textAlign: 'center', padding: '1rem 0' }}>No new notifications</p>
                       ) : (
-                          notifications.map(n => (
-                              <NotificationItem key={n.id} onClick={() => handleNotificationClick(n)}>
-                                  <div style={{ fontWeight: 'bold', color: 'white' }}>{n.title}</div>
-                                  <div style={{ fontSize: '0.85rem', color: '#8e9297' }}>{n.message}</div>
+                          requests.map(req => (
+                              <NotificationItem key={req.id} style={{ borderBottom: '1px solid #333' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <Avatar user={req.Requester} size="32px" />
+                                      <div>
+                                          <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'white' }}>{req.Requester ? req.Requester.username : 'Unknown'}</div>
+                                          <div style={{ fontSize: '0.75rem', color: '#8e9297' }}>Wants to connect</div>
+                                      </div>
+                                  </div>
+                                  <ActionButtons>
+                                      <Button onClick={() => handleRespond(req.id, 'accepted')} style={{ padding: '5px', fontSize: '0.8rem', background: 'green', marginTop: 0, flex: 1 }}>Accept</Button>
+                                      <Button onClick={() => handleRespond(req.id, 'rejected')} style={{ padding: '5px', fontSize: '0.8rem', background: 'red', marginTop: 0, flex: 1 }}>Reject</Button>
+                                  </ActionButtons>
                               </NotificationItem>
                           ))
                       )}
