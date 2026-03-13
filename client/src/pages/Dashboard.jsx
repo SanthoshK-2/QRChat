@@ -229,10 +229,20 @@ const NotificationDropdown = styled.div`
   overflow-y: auto;
   padding: 0.75rem;
   
+  @media (max-width: 768px) {
+    width: 300px;
+    max-width: 95vw;
+    right: -10px;
+  }
+  
   @media (max-width: 480px) {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
+    position: fixed;
+    top: 60px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: none;
+    transform: none;
   }
 `;
 

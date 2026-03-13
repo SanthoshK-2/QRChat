@@ -6,13 +6,21 @@ const multer = require('multer');
 const path = require('path');
 
 const fs = require('fs');
-const uploadsDir = path.join(__dirname, '..', 'uploads');
+const uploadsDir = path.resolve(__dirname, '../../server/uploads');
 if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+    try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    } catch (err) {
+        console.error('Failed to create uploads directory:', err);
+    }
 }
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
+        // Ensure directory exists right before saving
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+        }
         cb(null, uploadsDir);
     },
     filename: (req, file, cb) => {

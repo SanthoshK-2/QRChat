@@ -30,16 +30,25 @@ const pulseAnimation = `
 const Container = styled.div`
   display: flex;
   flex-direction: column;
+  background: ${({ theme }) => theme.body};
   position: ${props => props.variant === 'desktop' ? 'relative' : 'fixed'};
   top: 0;
-  left: 0;
-  right: 0;
+  left: ${props => props.variant === 'desktop' ? '0' : '50%'};
+  right: ${props => props.variant === 'desktop' ? '0' : 'auto'};
   bottom: 0;
-  height: ${props => props.variant === 'desktop' ? '100%' : '100dvh'};
-  background: ${({ theme }) => theme.body};
+  width: ${props => props.variant === 'desktop' ? '100%' : '100%'};
+  max-width: ${props => props.variant === 'desktop' ? 'none' : '800px'};
+  transform: ${props => props.variant === 'desktop' ? 'none' : 'translateX(-50%)'};
+  height: ${props => props.variant === 'desktop' ? '100%' : 'auto'};
   overflow: hidden;
   z-index: ${props => props.variant === 'desktop' ? '1' : '1000'};
   ${pulseAnimation}
+  
+  @media (max-width: 800px) {
+    left: 0;
+    transform: none;
+    max-width: 100%;
+  }
 `;
 
 const Header = styled.div`
