@@ -4,6 +4,8 @@ import { Html5Qrcode } from 'html5-qrcode';
 const QRScanner = ({ onScan }) => {
   useEffect(() => {
     const scanner = new Html5Qrcode("reader");
+    let isStarted = false;
+
     const start = async () => {
       try {
         await scanner.start(
@@ -14,14 +16,30 @@ const QRScanner = ({ onScan }) => {
           },
           () => {}
         );
-      } catch {}
+        isStarted = true;
+      } catch (err) {
+        console.error("Scanner start error:", err);
+      }
     };
     start();
 
     return () => {
-        scanner.stop().catch(() => {}).finally(() => {
-          try { scanner.clear(); } catch {}
-        });
+        const stopScanner = async () => {
+            try {
+                if (isStarted) {
+                    await scanner.stop();
+                }
+            } catch (err) {
+                console.warn("Scanner stop error ignored:", err);
+            } finally {
+                try {
+                    scanner.clear();
+                } catch (clearErr) {
+                    console.warn("Scanner clear error ignored:", clearErr);
+                }
+            }
+        };
+        stopScanner();
     };
   }, [onScan]);
 
