@@ -280,7 +280,7 @@ const ActionButtons = styled.div`
 `;
 
 const Dashboard = () => {
-  const { user, logout, updateProfile } = useContext(AuthContext);
+  const { user, setUser, logout, updateProfile } = useContext(AuthContext);
   const { socket } = useContext(SocketContext);
   const theme = useTheme();
   const navigate = useNavigate();
@@ -513,12 +513,12 @@ const Dashboard = () => {
       formData.append('profilePic', file);
       
       try {
-          await api.post('/auth/profile-pic', formData, {
+          const { data } = await api.post('/auth/profile-pic', formData, {
               headers: { 'Content-Type': 'multipart/form-data' }
           });
-          // Ideally refresh user context or profile here
+          // Instant state update for realtime effect
+          setUser(prev => ({ ...prev, profilePic: data.profilePic }));
           alert('Profile picture updated!');
-          window.location.reload(); // Simple reload to reflect changes
       } catch (error) {
           console.error('Error updating profile picture:', error);
           const errorMsg = error.response?.data?.message || error.message || 'Failed to update profile picture.';
@@ -531,8 +531,8 @@ const Dashboard = () => {
       
       try {
           await api.delete('/auth/profile-pic');
+          setUser(prev => ({ ...prev, profilePic: null }));
           alert('Profile picture removed');
-          window.location.reload();
       } catch (error) {
           console.error('Error removing profile picture:', error);
           alert('Failed to remove profile picture');

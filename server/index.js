@@ -367,6 +367,7 @@ io.on('connection', (socket) => {
         }
       }
 
+      console.log(`[SOCKET] send_message from ${data.senderId} to ${data.receiverId}, type: ${data.type}`);
       const message = await Message.create({ ...data, status: 'sent' });
       // Fetch sender info to append
       const fullMessage = await Message.findByPk(message.id, {
@@ -376,11 +377,12 @@ io.on('connection', (socket) => {
       if (data.groupId) {
           io.to(data.groupId).emit('receive_message', fullMessage);
       } else {
+          console.log(`[SOCKET] emitting receive_message to ${data.receiverId}`);
           io.to(data.receiverId).emit('receive_message', fullMessage);
           io.to(data.senderId).emit('message_sent', fullMessage);
       }
     } catch (err) {
-      console.error(err);
+      console.error('[SOCKET ERROR] send_message:', err);
     }
   });
 

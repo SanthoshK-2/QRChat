@@ -273,13 +273,19 @@ exports.uploadProfilePic = async (req, res) => {
         const user = await User.findByPk(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const fileUrl = `/uploads/${req.file.filename}`;
-        user.profilePic = fileUrl;
+        // Convert to Base64 for permanent storage (ignores ephemeral filesystem)
+        const fileData = fs.readFileSync(req.file.path);
+        const base64Image = `data:${req.file.mimetype};base64,${fileData.toString('base64')}`;
+        
+        user.profilePic = base64Image;
         await user.save();
 
+        // Cleanup local file
+        try { fs.unlinkSync(req.file.path); } catch {}
+
         res.json({
-            message: 'Profile picture updated',
-            profilePic: fileUrl
+            message: 'Profile picture updated permanently',
+            profilePic: base64Image
         });
     } catch (error) {
         console.error('Profile Upload Error:', error);

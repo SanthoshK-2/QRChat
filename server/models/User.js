@@ -26,7 +26,7 @@ const User = sequelize.define('User', {
     allowNull: false,
   },
   profilePic: {
-    type: DataTypes.TEXT, // Base64 or URL
+    type: DataTypes.TEXT('long'), // Base64 or URL
     allowNull: true,
   },
   bio: {

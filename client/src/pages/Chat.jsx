@@ -344,7 +344,11 @@ const Chat = ({ overrideOtherUserId, variant, onBack }) => {
       socket.on('receive_message', (message) => {
         if (message.senderId === otherUserId || message.receiverId === otherUserId) {
           const decryptedContent = message.type === 'text' ? decryptMessage(message.content) : message.content;
-          setMessages(prev => [...prev, { ...message, content: decryptedContent }]);
+          
+          setMessages(prev => {
+              if (prev.find(m => m.id === message.id)) return prev;
+              return [...prev, { ...message, content: decryptedContent }];
+          });
           
           // Mark as read immediately if it's from the current chat partner
           if (message.senderId === otherUserId) {
@@ -358,11 +362,6 @@ const Chat = ({ overrideOtherUserId, variant, onBack }) => {
       });
       
       socket.on('all_messages_read', ({ receiverId }) => {
-          // If the person we are chatting with (otherUserId) read all messages
-          // Then all OUR messages (senderId=user.id) should be marked read
-          // Wait, the event payload should probably indicate WHO read them. 
-          // Server sends: io.to(senderId).emit('all_messages_read', { receiverId });
-          // receiverId is the person who read them.
           if (receiverId === otherUserId) {
              setMessages(prev => prev.map(m => m.senderId === user.id ? { ...m, status: 'read', isRead: true } : m));
           }
@@ -371,7 +370,10 @@ const Chat = ({ overrideOtherUserId, variant, onBack }) => {
       socket.on('message_sent', (message) => {
           if (message.receiverId === otherUserId) {
                const decryptedContent = message.type === 'text' ? decryptMessage(message.content) : message.content;
-               setMessages(prev => [...prev, { ...message, content: decryptedContent }]);
+               setMessages(prev => {
+                   if (prev.find(m => m.id === message.id)) return prev;
+                   return [...prev, { ...message, content: decryptedContent }];
+               });
           }
       });
       
